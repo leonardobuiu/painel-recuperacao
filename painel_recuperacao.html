@@ -141,7 +141,7 @@ async function syncHevy(manual=false){
   const st=document.getElementById('syncStatus');
   st.innerHTML='<span class="spin"></span>';
   try{
-    const r=await fetch('https://api.hevyapp.com/v1/workouts?page=1&pageSize=20',{headers:{'api-key':key}});
+    const r=await fetch('https://api.hevyapp.com/v1/workouts?page=1&pageSize=20',{method:'GET',headers:{'api-key':key}});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
     hevyWorkouts=data.workouts||[];

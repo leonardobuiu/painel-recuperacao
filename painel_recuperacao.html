@@ -106,7 +106,7 @@ const HEVY_EX_MAP={
   'peck deck':'Peck deck / Crucifixo','tríceps na polia':'Tríceps polia alta',
   'triceps na polia':'Tríceps polia alta','máquina de fundos':'Tríceps máquina',
   'maquina de fundos':'Tríceps máquina','puxada frontal':'Puxada frontal na polia',
-  'remada baixa':'Remada baixa na polia','remada cavalinho':'Remada cavalinho',
+  'remada baixa':'Remada baixa na polia','remada cavalinho':'Remada cavalinho / Iso-Lateral','remada iso-lateral':'Remada cavalinho / Iso-Lateral','remada iso lateral':'Remada cavalinho / Iso-Lateral',
   'rosca direta':'Rosca direta','rosca com rotação':'Rosca martelo / cabo',
   'desenvolvimento de ombros':'Desenvolvimento','elevação lateral':'Elevação lateral',
   'elevacao lateral':'Elevação lateral','aberturas invertidas':'Crucifixo inverso',
@@ -141,7 +141,10 @@ async function syncHevy(manual=false){
   const st=document.getElementById('syncStatus');
   st.innerHTML='<span class="spin"></span>';
   try{
-    const r=await fetch('https://api.hevyapp.com/v1/workouts?page=1&pageSize=20',{method:'GET',headers:{'api-key':key}});
+    const cleanKey = key.replace(/[^a-zA-Z0-9\-]/g,'');
+    console.log('Usando chave:', cleanKey, 'len:', cleanKey.length);
+    const r=await fetch('https://api.hevyapp.com/v1/workouts?page=1&pageSize=20',{method:'GET',headers:{'api-key':cleanKey}});
+    console.log('Status:', r.status);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
     hevyWorkouts=data.workouts||[];

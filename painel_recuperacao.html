@@ -460,89 +460,90 @@ function ahHandleDrop(e){
 
 window.ahHandleFile = function(file){
   if(!file) return;
-  document.getElementById('ah-drop-label').textContent = 'Carregando ' + file.name + '...';
-  document.getElementById('ah-progress').style.display='block';
-  document.getElementById('ah-progress').textContent = 'Processando XML...';
+  const prog = document.getElementById('ah-progress');
+  prog.style.display='block';
+  document.getElementById('ah-drop-label').textContent = 'Lendo ' + file.name + ' (' + (file.size/1024/1024).toFixed(0) + 'MB)...';
+  prog.textContent = 'Lendo arquivo em chunks...';
 
-  const reader = new FileReader();
-  reader.onload = function(e){
-    const text = e.target.result;
-    document.getElementById('ah-progress').textContent = 'Extraindo dados...';
-    setTimeout(()=>{ ahParseAndRender(text); }, 50);
-  };
-  reader.readAsText(file, 'UTF-8');
-};
+  // Lê em chunks de 4MB para não travar
+  const CHUNK = 4 * 1024 * 1024;
+  const total = file.size;
+  let offset = 0;
+  let buffer = '';
 
-function ahParseAndRender(text){
   const today = new Date();
-  const cutoff30 = new Date(today); cutoff30.setDate(today.getDate()-29);
-  const cutoff14 = new Date(today); cutoff14.setDate(today.getDate()-13);
-
-  function fmtD(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
-  function keyD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-
-  // Gera arrays de datas
   const days30=[], days14=[];
   for(let i=29;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); days30.push(d); }
   for(let i=13;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); days14.push(d); }
+  function fmtD(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+  function keyD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
   const sleepByDay={}, hrvByDay={}, rhrByDay={}, stepsByDay={}, waterByDay={};
 
-  // Parseia linha a linha
-  // Processa em chunks para não travar o browser
-  const lines = text.split('\n');
-  const total = lines.length;
-  let i = 0;
-  const CHUNK = 50000;
+  function processLine(line){
+    if(!line.includes('startDate=')) return;
+    const sd = (line.match(/startDate="(\d{4}-\d{2}-\d{2})/) || [])[1];
+    const val = (line.match(/value="([^"]+)"/) || [])[1];
+    if(!sd || !val) return;
 
-  function processChunk(){
-    const end = Math.min(i + CHUNK, total);
-    for(; i < end; i++){
-      const line = lines[i];
-      if(!line.includes('startDate=')) continue;
-      {
-    if(!line.includes('startDate=')) continue;
-    const mDate = line.match(/startDate="(\d{4}-\d{2}-\d{2})/);
-    const mEnd  = line.match(/endDate="(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
-    const mVal  = line.match(/value="([^"]+)"/);
-    if(!mDate) continue;
-    const d = mDate[1];
-    const val = mVal ? mVal[1] : null;
-
-    if(line.includes('SleepAnalysis') && val && val !== 'HKCategoryValueSleepAnalysisInBed' && val !== 'HKCategoryValueSleepAnalysisAwake'){
-      const mS = line.match(/startDate="([^"]+)"/);
-      const mE = line.match(/endDate="([^"]+)"/);
-      if(mS && mE){
-        try{
-          const s=new Date(mS[1].replace(' ','T')), e=new Date(mE[1].replace(' ','T'));
-          const dur=(e-s)/3600000;
-          const dayKey = e.toISOString().slice(0,10);
-          sleepByDay[dayKey]=(sleepByDay[dayKey]||0)+dur;
-        }catch(err){}
-      }
-    } else if(line.includes('HeartRateVariabilitySDNN') && val){
-      if(!hrvByDay[d]) hrvByDay[d]=[];
-      hrvByDay[d].push(parseFloat(val));
-    } else if(line.includes('RestingHeartRate') && val){
-      if(!rhrByDay[d]) rhrByDay[d]=[];
-      rhrByDay[d].push(parseFloat(val));
-    } else if(line.includes('StepCount') && val){
-      stepsByDay[d]=(stepsByDay[d]||0)+parseFloat(val);
-    } else if(line.includes('DietaryWater') && val){
-      waterByDay[d]=(waterByDay[d]||0)+parseFloat(val);
-    }
-    }} // fim if startDate e chunk loop
-    document.getElementById('ah-progress').textContent = 'Processando... ' + Math.round(i/total*100) + '%';
-    if(i < total){
-      setTimeout(processChunk, 0);
-    } else {
-      renderCharts();
+    if(line.includes('SleepAnalysis') && line.includes('Asleep') && !line.includes('Awake')){
+      try{
+        const s=new Date((line.match(/startDate="([^"]+)"/) || [])[1]);
+        const e=new Date((line.match(/endDate="([^"]+)"/) || [])[1]);
+        const dur=(e-s)/3600000;
+        if(dur>0 && dur<16){
+          const dk=e.toISOString().slice(0,10);
+          sleepByDay[dk]=(sleepByDay[dk]||0)+dur;
+        }
+      }catch(err){}
+    } else if(line.includes('HeartRateVariabilitySDNN')){
+      if(!hrvByDay[sd]) hrvByDay[sd]=[];
+      hrvByDay[sd].push(parseFloat(val));
+    } else if(line.includes('RestingHeartRate')){
+      if(!rhrByDay[sd]) rhrByDay[sd]=[];
+      rhrByDay[sd].push(parseFloat(val));
+    } else if(line.includes('StepCount')){
+      stepsByDay[sd]=(stepsByDay[sd]||0)+parseFloat(val);
+    } else if(line.includes('DietaryWater')){
+      waterByDay[sd]=(waterByDay[sd]||0)+parseFloat(val);
     }
   }
 
-  function renderCharts(){
+  function readNextChunk(){
+    const slice = file.slice(offset, offset + CHUNK);
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const chunk = e.target.result;
+      buffer += chunk;
 
-  // Prepara dados
+      // Processa linhas completas
+      const lastNL = buffer.lastIndexOf('\n');
+      if(lastNL > 0){
+        const toProcess = buffer.slice(0, lastNL);
+        buffer = buffer.slice(lastNL + 1);
+        toProcess.split('\n').forEach(processLine);
+      }
+
+      offset += CHUNK;
+      const pct = Math.round(offset / total * 100);
+      prog.textContent = 'Lendo... ' + Math.min(pct,100) + '%';
+
+      if(offset < total){
+        setTimeout(readNextChunk, 0);
+      } else {
+        // Processa resto do buffer
+        if(buffer) buffer.split('\n').forEach(processLine);
+        prog.textContent = 'Renderizando gráficos...';
+        setTimeout(()=>renderAH(days30,days14,fmtD,keyD,sleepByDay,hrvByDay,rhrByDay,stepsByDay,waterByDay,prog), 50);
+      }
+    };
+    reader.readAsText(slice, 'UTF-8');
+  }
+
+  readNextChunk();
+};
+
+function renderAH(days30,days14,fmtD,keyD,sleepByDay,hrvByDay,rhrByDay,stepsByDay,waterByDay,prog){
   const sleepLabels=days30.map(d=>fmtD(d));
   const sleepData=days30.map(d=>parseFloat((sleepByDay[keyD(d)]||0).toFixed(1)));
   const hrvLabels=days14.map(d=>fmtD(d));
@@ -553,42 +554,209 @@ function ahParseAndRender(text){
   const stepsData=days14.map(d=>Math.round(stepsByDay[keyD(d)]||0));
   const waterLabels=days14.map(d=>fmtD(d));
   const waterData=days14.map(d=>Math.round(waterByDay[keyD(d)]||0));
+  const sleepAvg=sleepData.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(sleepData.filter(v=>v>0).length,1);
+  const hrvArr=hrvData.filter(v=>v); const hrvAvg=hrvArr.length?hrvArr.reduce((a,b)=>a+b,0)/hrvArr.length:0;
+  const rhrArr=rhrData.filter(v=>v); const rhrAvg=rhrArr.length?rhrArr.reduce((a,b)=>a+b,0)/rhrArr.length:0;
+  const stepsAvg=stepsData.reduce((a,b)=>a+b,0)/stepsData.length;
 
-  // KPIs
-  const sleepAvg = sleepData.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(sleepData.filter(v=>v>0).length,1);
-  const hrvAvg = hrvData.filter(v=>v).reduce((a,b)=>a+b,0)/Math.max(hrvData.filter(v=>v).length,1);
-  const rhrAvg = rhrData.filter(v=>v).reduce((a,b)=>a+b,0)/Math.max(rhrData.filter(v=>v).length,1);
-  const stepsAvg = stepsData.reduce((a,b)=>a+b,0)/stepsData.length;
-  const waterAvg = waterData.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(waterData.filter(v=>v>0).length,1);
-
-  document.getElementById('ah-kpis').innerHTML = `
+  document.getElementById('ah-kpis').innerHTML=`
     <div class="metric"><div class="metric-n">${sleepAvg.toFixed(1)}h</div><div class="metric-l">Sono médio</div></div>
     <div class="metric"><div class="metric-n">${Math.round(hrvAvg)}ms</div><div class="metric-l">HRV médio</div></div>
     <div class="metric"><div class="metric-n">${Math.round(rhrAvg)} bpm</div><div class="metric-l">FC repouso</div></div>
     <div class="metric"><div class="metric-n">${Math.round(stepsAvg/1000*10)/10}k</div><div class="metric-l">Passos médios</div></div>`;
 
-  const grid='#e1e0d9', muted='#898781';
-
-  // Destrói charts anteriores
-  ['ah-sleep','ah-hrv','ah-rhr','ah-steps','ah-water'].forEach(id=>{
-    const c=Chart.getChart(id); if(c) c.destroy();
-  });
-
+  const grid='#e1e0d9',muted='#898781';
+  ['ah-sleep','ah-hrv','ah-rhr','ah-steps','ah-water'].forEach(id=>{ const ch=Chart.getChart(id); if(ch) ch.destroy(); });
   new Chart(document.getElementById('ah-sleep'),{type:'bar',data:{labels:sleepLabels,datasets:[{data:sleepData,backgroundColor:sleepData.map(v=>v<6?'#f09595':'#85b7eb'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'h'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{display:false}},y:{min:0,max:10,ticks:{font:{size:10},color:muted,callback:v=>v+'h'},grid:{color:grid}}}}});
-
   new Chart(document.getElementById('ah-hrv'),{type:'line',data:{labels:hrvLabels,datasets:[{data:hrvData,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,.08)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1baf7a',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'ms'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+'ms'},grid:{color:grid}}}}});
-
   new Chart(document.getElementById('ah-rhr'),{type:'line',data:{labels:rhrLabels,datasets:[{data:rhrData,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#e34948',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' bpm'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+' bpm'},grid:{color:grid}}}}});
-
   new Chart(document.getElementById('ah-steps'),{type:'bar',data:{labels:stepsLabels,datasets:[{data:stepsData,backgroundColor:stepsData.map(v=>v>=10000?'#85b7eb':'#d3d1c7'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' passos'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:grid}}}}});
-
   new Chart(document.getElementById('ah-water'),{type:'bar',data:{labels:waterLabels,datasets:[{data:waterData,backgroundColor:waterData.map(v=>v>=2000?'#1baf7a':'#fac775'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' mL'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v>0?(v/1000).toFixed(1)+'L':'0'},grid:{color:grid}}}}});
-
   document.getElementById('ah-content').style.display='';
-  document.getElementById('ah-progress').textContent='✓ Dados carregados com sucesso.';
-  document.getElementById('ah-drop-label').textContent='Clique para atualizar com nova exportação';
-} // fim renderCharts
-  processChunk();
+  prog.textContent='✓ Carregado — Sono:'+sleepAvg.toFixed(1)+'h | HRV:'+Math.round(hrvAvg)+'ms | Passos:'+Math.round(stepsAvg/1000)+'k';
+  document.getElementById('ah-drop-label').textContent='Clique para atualizar';
+}
+
+function ahParseAndRender(text){
+  const today = new Date();
+  const days30=[], days14=[];
+  for(let i=29;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); days30.push(d); }
+  for(let i=13;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); days14.push(d); }
+  function fmtD(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+  function keyD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  const sleepByDay={}, hrvByDay={}, rhrByDay={}, stepsByDay={}, waterByDay={};
+  const prog = document.getElementById('ah-progress');
+  prog.textContent = 'Analisando XML com DOMParser...';
+
+  setTimeout(function(){
+    let doc;
+    try {
+      // Remove DOCTYPE interno que o browser rejeita
+      const cleaned = text.replace(/<!DOCTYPE[^[]*\[[^\]]*\]>/s, '');
+      const parser = new DOMParser();
+      doc = parser.parseFromString(cleaned, 'text/xml');
+    } catch(e) {
+      prog.textContent = 'Erro ao parsear XML: ' + e.message;
+      return;
+    }
+
+    const parseErr = doc.querySelector('parsererror');
+    if(parseErr){
+      // Fallback: processa linha por linha
+      prog.textContent = 'DOMParser falhou, usando parser de texto...';
+      setTimeout(()=>parseByLines(text), 50);
+      return;
+    }
+
+    prog.textContent = 'XML carregado. Processando registros...';
+
+    setTimeout(function(){
+      const records = doc.querySelectorAll('Record');
+      prog.textContent = `Processando ${records.length.toLocaleString()} registros...`;
+
+      setTimeout(function(){
+        records.forEach(function(r){
+          const type = r.getAttribute('type') || '';
+          const val  = r.getAttribute('value') || '';
+          const sd   = (r.getAttribute('startDate') || '').slice(0,10);
+          const ed   = r.getAttribute('endDate') || '';
+          if(!sd) return;
+
+          if(type === 'HKCategoryTypeIdentifierSleepAnalysis'){
+            if(val.includes('Asleep') && !val.includes('Awake')){
+              try{
+                const s=new Date(r.getAttribute('startDate')), e=new Date(ed);
+                const dur=(e-s)/3600000;
+                const dk=e.toISOString().slice(0,10);
+                sleepByDay[dk]=(sleepByDay[dk]||0)+dur;
+              }catch(err){}
+            }
+          } else if(type === 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN'){
+            if(!hrvByDay[sd]) hrvByDay[sd]=[];
+            hrvByDay[sd].push(parseFloat(val));
+          } else if(type === 'HKQuantityTypeIdentifierRestingHeartRate'){
+            if(!rhrByDay[sd]) rhrByDay[sd]=[];
+            rhrByDay[sd].push(parseFloat(val));
+          } else if(type === 'HKQuantityTypeIdentifierStepCount'){
+            stepsByDay[sd]=(stepsByDay[sd]||0)+parseFloat(val);
+          } else if(type === 'HKQuantityTypeIdentifierDietaryWater'){
+            waterByDay[sd]=(waterByDay[sd]||0)+parseFloat(val);
+          }
+        });
+
+        prog.textContent = 'Renderizando gráficos...';
+        setTimeout(function(){
+          const sleepLabels=days30.map(d=>fmtD(d));
+          const sleepData=days30.map(d=>parseFloat((sleepByDay[keyD(d)]||0).toFixed(1)));
+          const hrvLabels=days14.map(d=>fmtD(d));
+          const hrvData=days14.map(d=>{ const v=hrvByDay[keyD(d)]; return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null; });
+          const rhrLabels=days14.map(d=>fmtD(d));
+          const rhrData=days14.map(d=>{ const v=rhrByDay[keyD(d)]; return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null; });
+          const stepsLabels=days14.map(d=>fmtD(d));
+          const stepsData=days14.map(d=>Math.round(stepsByDay[keyD(d)]||0));
+          const waterLabels=days14.map(d=>fmtD(d));
+          const waterData=days14.map(d=>Math.round(waterByDay[keyD(d)]||0));
+
+          const sleepAvg=sleepData.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(sleepData.filter(v=>v>0).length,1);
+          const hrvArr=hrvData.filter(v=>v);
+          const hrvAvg=hrvArr.length?hrvArr.reduce((a,b)=>a+b,0)/hrvArr.length:0;
+          const rhrArr=rhrData.filter(v=>v);
+          const rhrAvg=rhrArr.length?rhrArr.reduce((a,b)=>a+b,0)/rhrArr.length:0;
+          const stepsAvg=stepsData.reduce((a,b)=>a+b,0)/stepsData.length;
+
+          document.getElementById('ah-kpis').innerHTML=`
+            <div class="metric"><div class="metric-n">${sleepAvg.toFixed(1)}h</div><div class="metric-l">Sono médio</div></div>
+            <div class="metric"><div class="metric-n">${Math.round(hrvAvg)}ms</div><div class="metric-l">HRV médio</div></div>
+            <div class="metric"><div class="metric-n">${Math.round(rhrAvg)} bpm</div><div class="metric-l">FC repouso</div></div>
+            <div class="metric"><div class="metric-n">${Math.round(stepsAvg/1000*10)/10}k</div><div class="metric-l">Passos médios</div></div>`;
+
+          const grid='#e1e0d9', muted='#898781';
+          ['ah-sleep','ah-hrv','ah-rhr','ah-steps','ah-water'].forEach(id=>{ const ch=Chart.getChart(id); if(ch) ch.destroy(); });
+
+          new Chart(document.getElementById('ah-sleep'),{type:'bar',data:{labels:sleepLabels,datasets:[{data:sleepData,backgroundColor:sleepData.map(v=>v<6?'#f09595':'#85b7eb'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'h'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{display:false}},y:{min:0,max:10,ticks:{font:{size:10},color:muted,callback:v=>v+'h'},grid:{color:grid}}}}});
+          new Chart(document.getElementById('ah-hrv'),{type:'line',data:{labels:hrvLabels,datasets:[{data:hrvData,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,.08)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1baf7a',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'ms'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+'ms'},grid:{color:grid}}}}});
+          new Chart(document.getElementById('ah-rhr'),{type:'line',data:{labels:rhrLabels,datasets:[{data:rhrData,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#e34948',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' bpm'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+' bpm'},grid:{color:grid}}}}});
+          new Chart(document.getElementById('ah-steps'),{type:'bar',data:{labels:stepsLabels,datasets:[{data:stepsData,backgroundColor:stepsData.map(v=>v>=10000?'#85b7eb':'#d3d1c7'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' passos'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:grid}}}}});
+          new Chart(document.getElementById('ah-water'),{type:'bar',data:{labels:waterLabels,datasets:[{data:waterData,backgroundColor:waterData.map(v=>v>=2000?'#1baf7a':'#fac775'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' mL'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v>0?(v/1000).toFixed(1)+'L':'0'},grid:{color:grid}}}}});
+
+          document.getElementById('ah-content').style.display='';
+          prog.textContent='✓ Dados carregados. Sono: '+sleepAvg.toFixed(1)+'h | HRV: '+Math.round(hrvAvg)+'ms | Passos: '+Math.round(stepsAvg/1000)+'k';
+          document.getElementById('ah-drop-label').textContent='Clique para atualizar com nova exportação';
+        },50);
+      },50);
+    },50);
+  },100);
+  function parseByLines(text){
+    // Fallback: processa linha a linha com indexOf
+    const lines = text.split('\n');
+    const total = lines.length;
+    let i = 0;
+    function chunk(){
+      const end = Math.min(i+100000, total);
+      for(;i<end;i++){
+        const line = lines[i];
+        if(!line.includes('startDate=')) continue;
+        const sd = (line.match(/startDate="(\d{4}-\d{2}-\d{2})/) || [])[1];
+        const val = (line.match(/value="([^"]+)"/) || [])[1];
+        if(!sd || !val) continue;
+        if(line.includes('SleepAnalysis') && line.includes('Asleep')){
+          try{
+            const s=new Date((line.match(/startDate="([^"]+)"/) || [])[1]);
+            const e=new Date((line.match(/endDate="([^"]+)"/) || [])[1]);
+            const dur=(e-s)/3600000;
+            if(dur>0 && dur<16){
+              const dk=e.toISOString().slice(0,10);
+              sleepByDay[dk]=(sleepByDay[dk]||0)+dur;
+            }
+          }catch(e){}
+        } else if(line.includes('HeartRateVariabilitySDNN')){
+          if(!hrvByDay[sd]) hrvByDay[sd]=[];
+          hrvByDay[sd].push(parseFloat(val));
+        } else if(line.includes('RestingHeartRate')){
+          if(!rhrByDay[sd]) rhrByDay[sd]=[];
+          rhrByDay[sd].push(parseFloat(val));
+        } else if(line.includes('StepCount')){
+          stepsByDay[sd]=(stepsByDay[sd]||0)+parseFloat(val);
+        } else if(line.includes('DietaryWater')){
+          waterByDay[sd]=(waterByDay[sd]||0)+parseFloat(val);
+        }
+      }
+      prog.textContent = 'Processando... '+Math.round(i/total*100)+'%';
+      if(i<total){ setTimeout(chunk,0); } else { renderFinal(); }
+    }
+    chunk();
+  }
+
+  function renderFinal(){
+    // Igual ao bloco de renderização do DOMParser
+    const sleepLabels=days30.map(d=>fmtD(d));
+    const sleepData=days30.map(d=>parseFloat((sleepByDay[keyD(d)]||0).toFixed(1)));
+    const hrvLabels=days14.map(d=>fmtD(d));
+    const hrvData=days14.map(d=>{ const v=hrvByDay[keyD(d)]; return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null; });
+    const rhrLabels=days14.map(d=>fmtD(d));
+    const rhrData=days14.map(d=>{ const v=rhrByDay[keyD(d)]; return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null; });
+    const stepsLabels=days14.map(d=>fmtD(d));
+    const stepsData=days14.map(d=>Math.round(stepsByDay[keyD(d)]||0));
+    const waterLabels=days14.map(d=>fmtD(d));
+    const waterData=days14.map(d=>Math.round(waterByDay[keyD(d)]||0));
+    const sleepAvg=sleepData.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(sleepData.filter(v=>v>0).length,1);
+    const hrvArr=hrvData.filter(v=>v); const hrvAvg=hrvArr.length?hrvArr.reduce((a,b)=>a+b,0)/hrvArr.length:0;
+    const rhrArr=rhrData.filter(v=>v); const rhrAvg=rhrArr.length?rhrArr.reduce((a,b)=>a+b,0)/rhrArr.length:0;
+    const stepsAvg=stepsData.reduce((a,b)=>a+b,0)/stepsData.length;
+    document.getElementById('ah-kpis').innerHTML=`<div class="metric"><div class="metric-n">${sleepAvg.toFixed(1)}h</div><div class="metric-l">Sono médio</div></div><div class="metric"><div class="metric-n">${Math.round(hrvAvg)}ms</div><div class="metric-l">HRV médio</div></div><div class="metric"><div class="metric-n">${Math.round(rhrAvg)} bpm</div><div class="metric-l">FC repouso</div></div><div class="metric"><div class="metric-n">${Math.round(stepsAvg/1000*10)/10}k</div><div class="metric-l">Passos médios</div></div>`;
+    const grid='#e1e0d9',muted='#898781';
+    ['ah-sleep','ah-hrv','ah-rhr','ah-steps','ah-water'].forEach(id=>{ const ch=Chart.getChart(id); if(ch) ch.destroy(); });
+    new Chart(document.getElementById('ah-sleep'),{type:'bar',data:{labels:sleepLabels,datasets:[{data:sleepData,backgroundColor:sleepData.map(v=>v<6?'#f09595':'#85b7eb'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'h'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{display:false}},y:{min:0,max:10,ticks:{font:{size:10},color:muted,callback:v=>v+'h'},grid:{color:grid}}}}});
+    new Chart(document.getElementById('ah-hrv'),{type:'line',data:{labels:hrvLabels,datasets:[{data:hrvData,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,.08)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1baf7a',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'ms'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+'ms'},grid:{color:grid}}}}});
+    new Chart(document.getElementById('ah-rhr'),{type:'line',data:{labels:rhrLabels,datasets:[{data:rhrData,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#e34948',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' bpm'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+' bpm'},grid:{color:grid}}}}});
+    new Chart(document.getElementById('ah-steps'),{type:'bar',data:{labels:stepsLabels,datasets:[{data:stepsData,backgroundColor:stepsData.map(v=>v>=10000?'#85b7eb':'#d3d1c7'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' passos'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:grid}}}}});
+    new Chart(document.getElementById('ah-water'),{type:'bar',data:{labels:waterLabels,datasets:[{data:waterData,backgroundColor:waterData.map(v=>v>=2000?'#1baf7a':'#fac775'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' mL'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v>0?(v/1000).toFixed(1)+'L':'0'},grid:{color:grid}}}}});
+    document.getElementById('ah-content').style.display='';
+    prog.textContent='✓ Carregado — Sono:'+sleepAvg.toFixed(1)+'h HRV:'+Math.round(hrvAvg)+'ms Passos:'+Math.round(stepsAvg/1000)+'k';
+    document.getElementById('ah-drop-label').textContent='Clique para atualizar';
+  }
+
 } // fim ahParseAndRender
 
 // Injeta quando o DOM estiver pronto

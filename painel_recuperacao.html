@@ -489,8 +489,18 @@ function ahParseAndRender(text){
   const sleepByDay={}, hrvByDay={}, rhrByDay={}, stepsByDay={}, waterByDay={};
 
   // Parseia linha a linha
+  // Processa em chunks para não travar o browser
   const lines = text.split('\n');
-  for(const line of lines){
+  const total = lines.length;
+  let i = 0;
+  const CHUNK = 50000;
+
+  function processChunk(){
+    const end = Math.min(i + CHUNK, total);
+    for(; i < end; i++){
+      const line = lines[i];
+      if(!line.includes('startDate=')) continue;
+      {
     if(!line.includes('startDate=')) continue;
     const mDate = line.match(/startDate="(\d{4}-\d{2}-\d{2})/);
     const mEnd  = line.match(/endDate="(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
@@ -521,7 +531,16 @@ function ahParseAndRender(text){
     } else if(line.includes('DietaryWater') && val){
       waterByDay[d]=(waterByDay[d]||0)+parseFloat(val);
     }
+    }} // fim if startDate e chunk loop
+    document.getElementById('ah-progress').textContent = 'Processando... ' + Math.round(i/total*100) + '%';
+    if(i < total){
+      setTimeout(processChunk, 0);
+    } else {
+      renderCharts();
+    }
   }
+
+  function renderCharts(){
 
   // Prepara dados
   const sleepLabels=days30.map(d=>fmtD(d));
@@ -568,7 +587,9 @@ function ahParseAndRender(text){
   document.getElementById('ah-content').style.display='';
   document.getElementById('ah-progress').textContent='✓ Dados carregados com sucesso.';
   document.getElementById('ah-drop-label').textContent='Clique para atualizar com nova exportação';
-}
+} // fim renderCharts
+  processChunk();
+} // fim ahParseAndRender
 
 // Injeta quando o DOM estiver pronto
 if(document.readyState==='loading'){

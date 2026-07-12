@@ -4,373 +4,158 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel de Recuperação — Leonardo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.14.0/dist/tabler-icons.min.css">
 <style>
 :root{
-  --bg:#0E1117;--card:#161B25;--card2:#1E2535;
-  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
-  --neon:#4FFFB0;--neon-dim:rgba(79,255,176,.08);--neon-border:rgba(79,255,176,.25);
-  --blue:#3B82F6;--blue-dim:rgba(59,130,246,.1);--blue-border:rgba(59,130,246,.3);
-  --red:#FF4D4D;--red-dim:rgba(255,77,77,.1);--red-border:rgba(255,77,77,.3);
-  --yellow:#FACC15;--yellow-dim:rgba(250,204,21,.1);
-  --text:#F0F2F8;--text2:#8892A4;--text3:#4A5468;
-  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
-  --r:10px;
+  --bg:#f8f7f4;--surface:#ffffff;--surface1:#f1f0ec;
+  --border:rgba(11,11,11,.10);--border-strong:rgba(11,11,11,.18);
+  --text:#0b0b0b;--text2:#52514e;--text3:#898781;
+  --accent:#2a78d6;--accent-bg:#e6f1fb;--accent-border:#b5d4f4;
+  --green:#1baf7a;--green-bg:#e1f5ee;--green-border:#9fe1cb;
+  --red:#d03b3b;--red-bg:#fcebeb;--red-border:#f7c1c1;
+  --yellow:#ba7517;--yellow-bg:#faeeda;--yellow-border:#fac775;
+  --radius:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh}
-
-/* Layout */
-.shell{display:flex;min-height:100vh}
-.sidebar{width:220px;background:var(--card);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:10}
-.main{margin-left:220px;padding:28px 32px;flex:1;max-width:900px}
-
-/* Sidebar */
-.logo{padding:0 20px 24px;border-bottom:1px solid var(--border);margin-bottom:16px}
-.logo-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--neon);letter-spacing:.5px}
-.logo-sub{font-size:11px;color:var(--text3);margin-top:3px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;border-left:2px solid transparent;transition:all .15s}
-.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
-.nav-item.active{color:var(--neon);border-left-color:var(--neon);background:var(--neon-dim)}
-.nav-item i{font-size:16px}
-.sync-area{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border)}
-.api-input{width:100%;background:var(--card2);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;margin-bottom:8px}
-.api-input:focus{border-color:var(--neon-border)}
-.sync-btn{width:100%;background:var(--neon-dim);border:1px solid var(--neon-border);border-radius:6px;padding:8px;color:var(--neon);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;font-family:var(--sans)}
-.sync-btn:hover{background:rgba(79,255,176,.15)}
-.sync-status{font-size:11px;color:var(--text3);margin-top:6px;text-align:center;min-height:16px}
-.sync-ok{color:var(--neon)}.sync-err{color:var(--red)}
-
-/* Panels */
-.panel{display:none}.panel.active{display:block}
-
-/* Header */
-.panel-header{margin-bottom:24px}
-.panel-title{font-size:20px;font-weight:600;color:var(--text)}
-.panel-sub{font-size:13px;color:var(--text2);margin-top:4px}
-
-/* KPI grid */
-.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi.green::before{background:var(--neon)}.kpi.blue::before{background:var(--blue)}.kpi.red::before{background:var(--red)}.kpi.yellow::before{background:var(--yellow)}
-.kpi-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
-.kpi-value{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--text);line-height:1}
-.kpi-value.green{color:var(--neon)}.kpi-value.red{color:var(--red)}.kpi-value.blue{color:var(--blue)}
-
-/* Section */
-.section{margin-bottom:28px}
-.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* Dor grid */
-.pain-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-.pain-col{display:flex;flex-direction:column;align-items:center;gap:6px}
-.pain-day{font-size:11px;color:var(--text3);font-weight:500}
-.pain-day.today{color:var(--neon)}
-.pain-date{font-size:10px;color:var(--text3)}
-.pain-sel{width:48px;height:32px;background:var(--card2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;font-weight:600;text-align:center;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none}
-.pain-sel:focus{border-color:var(--neon-border)}
-.pain-sel.ok{background:rgba(79,255,176,.1);border-color:var(--neon-border);color:var(--neon)}
-.pain-sel.bad{background:var(--red-dim);border-color:var(--red-border);color:var(--red)}
-
-/* Treino rows */
-.train-rows{display:flex;flex-direction:column;gap:6px}
-.train-row{display:flex;align-items:center;gap:10px}
-.train-label{width:72px;font-size:12px;color:var(--text2);flex-shrink:0}
-.train-label.today{color:var(--neon);font-weight:500}
-.seg-group{display:flex;gap:4px;flex:1}
-.seg{flex:1;padding:7px 4px;font-size:11px;font-weight:500;text-align:center;border-radius:6px;border:1px solid var(--border2);background:var(--card2);cursor:pointer;color:var(--text2);transition:all .15s}
-.seg:hover{border-color:var(--border2);color:var(--text)}
-.seg.on{background:var(--blue-dim);border-color:var(--blue-border);color:var(--blue)}
-.seg.hevy{background:rgba(79,255,176,.08);border-color:var(--neon-border);color:var(--neon)}
-.badge-hevy{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--neon-dim);color:var(--neon);border:1px solid var(--neon-border);white-space:nowrap;font-weight:600;font-family:var(--mono)}
-
-/* Sono */
-.sleep-rows{display:flex;flex-direction:column;gap:6px}
-.sleep-row{display:flex;align-items:center;gap:10px}
-
-/* Água */
-.water-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.cup{font-size:24px;cursor:pointer;transition:transform .1s;user-select:none;line-height:1}
-.cup:hover{transform:scale(1.15)}
-.water-count{font-family:var(--mono);font-size:13px;color:var(--text2);margin-left:4px}
-
-/* Suplementos */
-.supp-row{display:flex;gap:8px;flex-wrap:wrap}
-.supp{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--card2);cursor:pointer;font-size:13px;color:var(--text2);transition:all .15s;font-family:var(--sans)}
-.supp:hover{border-color:var(--border2);color:var(--text)}
-.supp.on{background:rgba(79,255,176,.08);border-color:var(--neon-border);color:var(--neon)}
-.supp i{font-size:16px}
-
-/* Dashboard */
-.ex-sel{width:100%;background:var(--card2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;color:var(--text);font-size:13px;outline:none;margin-bottom:16px;font-family:var(--sans)}
-.ex-sel:focus{border-color:var(--neon-border)}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:16px}
-.chart-card h3{font-size:14px;font-weight:500;margin-bottom:4px}
-.chart-card p{font-size:12px;color:var(--text2);margin-bottom:12px}
-.chart-wrap{position:relative;width:100%;height:200px}
-.prog-bar-item{margin-bottom:14px}
-.prog-bar-top{display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px}
-.prog-bar-name{font-weight:500}
-.prog-bar-delta{font-family:var(--mono);font-size:12px}
-.prog-bar-track{height:4px;background:var(--card2);border-radius:2px;overflow:hidden}
-.prog-bar-fill{height:100%;border-radius:2px;transition:width .5s}
-.prog-bar-meta{font-size:11px;color:var(--text3);margin-top:3px}
-
-/* Apple Health */
-.ah-drop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;margin-bottom:12px}
-.ah-drop:hover{border-color:var(--neon-border);background:var(--neon-dim);color:var(--neon)}
-.ah-drop i{font-size:32px;display:block;margin-bottom:8px;color:var(--text3)}
-.ah-progress{font-size:12px;color:var(--text3);margin-bottom:16px;min-height:16px;font-family:var(--mono)}
-.ah-progress.ok{color:var(--neon)}
-
-/* Legend */
-.legend{display:flex;gap:14px;margin-bottom:8px;font-size:11px;color:var(--text2);flex-wrap:wrap}
-.legend span{display:flex;align-items:center;gap:5px}
-.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-
-/* Spinner */
-.spin{display:inline-block;width:12px;height:12px;border:1.5px solid var(--neon-border);border-top-color:var(--neon);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;padding:24px 16px 60px;max-width:720px;margin:0 auto}
+h1{font-size:20px;font-weight:500;margin-bottom:4px}
+.sub{font-size:13px;color:var(--text2);margin-bottom:20px}
+.api-row{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+.api-row input{flex:1;background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius);padding:9px 12px;font-family:monospace;font-size:12px;color:var(--text);outline:none}
+.api-row input:focus{border-color:var(--accent)}
+.sync-status{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.sync-ok{color:var(--green)}.sync-err{color:var(--red)}
+.spin{display:inline-block;width:12px;height:12px;border:1.5px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-
-/* Mobile */
-.mobile-nav{display:none;background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;align-items:center;gap:8px;overflow-x:auto}
-.mob-tab{padding:7px 14px;border-radius:20px;border:1px solid var(--border2);font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);white-space:nowrap;background:transparent}
-.mob-tab.active{background:var(--neon-dim);border-color:var(--neon-border);color:var(--neon)}
-
-@media(max-width:720px){
-  .sidebar{display:none}
-  .main{margin-left:0;padding:16px}
-  .mobile-nav{display:flex}
-  .kpi-grid{grid-template-columns:repeat(2,1fr)}
-  .pain-grid{grid-template-columns:repeat(7,1fr);gap:4px}
-  .pain-sel{width:36px;font-size:11px}
-}
+button{background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius);padding:8px 14px;font-size:13px;cursor:pointer;color:var(--text);display:inline-flex;align-items:center;gap:6px}
+button:hover{background:var(--surface1)}
+.tabs{display:flex;gap:2px;background:var(--surface1);border-radius:var(--radius);padding:3px;margin-bottom:20px}
+.tab{flex:1;padding:8px;font-size:13px;font-weight:500;text-align:center;border-radius:calc(var(--radius) - 2px);cursor:pointer;color:var(--text2);border:none;background:transparent}
+.tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.sec{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin:1.25rem 0 .6rem}
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.metric{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:.85rem;text-align:center}
+.metric-n{font-size:22px;font-weight:500}
+.metric-l{font-size:11px;color:var(--text2);margin-top:2px}
+.day-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:1.25rem}
+.day-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.day-name{font-size:11px;color:var(--text3);font-weight:500}
+.day-name.today{color:var(--accent)}
+.day-date{font-size:10px;color:var(--text3)}
+.pain-sel{width:44px;height:28px;font-size:12px;text-align:center;border-radius:6px;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text);outline:none}
+.pain-ok{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+.pain-bad{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
+.row-line{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.row-label{width:68px;font-size:12px;color:var(--text2);flex-shrink:0}
+.row-label.today{color:var(--accent);font-weight:500}
+.seg-group{display:flex;gap:3px;flex:1}
+.seg{flex:1;padding:6px 2px;font-size:11px;text-align:center;border-radius:6px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;color:var(--text2)}
+.seg:hover{background:var(--surface1)}
+.seg.on{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent);font-weight:500}
+.seg.hevy{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+.badge-hevy{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--green-bg);color:var(--green);border:.5px solid var(--green-border);white-space:nowrap}
+.cup-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.cup{cursor:pointer;font-size:22px;line-height:1;user-select:none}
+.supp-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.supp{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:var(--radius);border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;font-size:13px;color:var(--text2)}
+.supp:hover{background:var(--surface1)}
+.supp.on{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+.no-data{text-align:center;padding:3rem;color:var(--text3);font-size:13px}
+.no-data i{font-size:32px;display:block;margin-bottom:.5rem}
+.ex-sel{width:100%;margin-bottom:1rem;font-size:13px;padding:9px 10px;border-radius:var(--radius);border:.5px solid var(--border-strong);background:var(--surface);color:var(--text);outline:none}
+.prog-card{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+.prog-card h3{font-size:15px;font-weight:500;margin-bottom:.25rem}
+.prog-card p{font-size:12px;color:var(--text2);margin-bottom:.75rem}
+.chart-wrap{position:relative;width:100%;height:220px}
+.legend{display:flex;gap:12px;margin-bottom:.5rem;font-size:12px;color:var(--text2);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:4px}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.prog-bar-item{margin-bottom:.85rem}
+.prog-bar-item .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.prog-bar-item .name{font-size:13px;font-weight:500}
+.prog-bar-item .delta{font-size:13px;font-weight:500}
+.prog-bar-item .track{height:4px;background:var(--surface1);border-radius:2px;overflow:hidden}
+.prog-bar-item .fill{height:100%;border-radius:2px;transition:width .4s}
+.prog-bar-item .sessions{font-size:11px;color:var(--text3);margin-top:2px}
 </style>
 </head>
 <body>
 
-<div class="mobile-nav" id="mobileNav">
-  <button class="mob-tab active" onclick="showPanel('tracker',this)">Tracker</button>
-  <button class="mob-tab" onclick="showPanel('dashboard',this)">Progressão</button>
-  <button class="mob-tab" onclick="showPanel('apple',this)">Apple Health</button>
+<h1>Painel de Recuperação</h1>
+<p class="sub">Tracker diário + progressão de carga — Leonardo</p>
+
+<div class="api-row">
+  <input type="password" id="apiKey" placeholder="Chave de API do Hevy…" value="002e30b6-d5bb-45b7-a2b4-6eb6f0122eb0">
+  <button onclick="syncHevy(true)"><i class="ti ti-refresh"></i> Sincronizar</button>
+  <div class="sync-status" id="syncStatus"></div>
 </div>
 
-<div class="shell">
-  <aside class="sidebar">
-    <div class="logo">
-      <div class="logo-title">PAINEL REC.</div>
-      <div class="logo-sub">Leonardo · Adutor</div>
-    </div>
-
-    <nav>
-      <div class="nav-item active" id="nav-tracker" onclick="showPanel('tracker',this)">
-        <i class="ti ti-activity-heartbeat" aria-hidden="true"></i> Tracker diário
-      </div>
-      <div class="nav-item" id="nav-dashboard" onclick="showPanel('dashboard',this)">
-        <i class="ti ti-chart-line" aria-hidden="true"></i> Progressão de carga
-      </div>
-      <div class="nav-item" id="nav-apple" onclick="showPanel('apple',this)">
-        <i class="ti ti-heart-rate-monitor" aria-hidden="true"></i> Apple Health
-      </div>
-    </nav>
-
-    <div class="sync-area">
-      <input type="password" class="api-input" id="apiKey" placeholder="Chave API Hevy..." value="002e30b6-d5bb-45b7-a2b4-6eb6f0122eb0">
-      <button class="sync-btn" onclick="syncHevy(true)">
-        <i class="ti ti-refresh" aria-hidden="true"></i> Sincronizar Hevy
-      </button>
-      <div class="sync-status" id="syncStatus"></div>
-    </div>
-  </aside>
-
-  <main class="main">
-
-    <!-- TRACKER -->
-    <div class="panel active" id="panel-tracker">
-      <div class="panel-header">
-        <div class="panel-title">Tracker diário</div>
-        <div class="panel-sub">Semana de <span id="weekRange"></span></div>
-      </div>
-
-      <div class="kpi-grid">
-        <div class="kpi red">
-          <div class="kpi-label">Dias com dor &gt;3</div>
-          <div class="kpi-value red" id="kpi-pain">0</div>
-        </div>
-        <div class="kpi blue">
-          <div class="kpi-label">Dias treinados</div>
-          <div class="kpi-value blue" id="kpi-trained">0</div>
-        </div>
-        <div class="kpi green">
-          <div class="kpi-label">Média de água</div>
-          <div class="kpi-value green" id="kpi-water">0.0</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-label">Dor (0–10)</div>
-        <div class="pain-grid" id="painGrid"></div>
-      </div>
-
-      <div class="section">
-        <div class="section-label">Treino do dia</div>
-        <div class="train-rows" id="trainRows"></div>
-      </div>
-
-      <div class="section">
-        <div class="section-label">Sono</div>
-        <div class="sleep-rows" id="sleepRows"></div>
-      </div>
-
-      <div class="section">
-        <div class="section-label">Água — meta 8 copos · hoje</div>
-        <div class="water-row" id="waterRow"></div>
-      </div>
-
-      <div class="section">
-        <div class="section-label">Suplementos · hoje</div>
-        <div class="supp-row" id="suppRow"></div>
-      </div>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div class="panel" id="panel-dashboard">
-      <div class="panel-header">
-        <div class="panel-title">Progressão de carga</div>
-        <div class="panel-sub">Evolução por exercício via Hevy</div>
-      </div>
-      <div class="kpi-grid" id="dash-kpis">
-        <div class="kpi green"><div class="kpi-label">Treinos registrados</div><div class="kpi-value" id="d-total">—</div></div>
-        <div class="kpi blue"><div class="kpi-label">Exercícios evoluindo</div><div class="kpi-value blue" id="d-prog">—</div></div>
-        <div class="kpi yellow"><div class="kpi-label">Melhor progressão</div><div class="kpi-value" id="d-best" style="font-size:18px">—</div></div>
-      </div>
-      <select class="ex-sel" id="exSel" onchange="renderExChart(this.value)">
-        <option value="">Selecione um exercício para ver a evolução...</option>
-      </select>
-      <div id="exChartArea"></div>
-      <div class="section">
-        <div class="section-label">Ranking de progressão</div>
-        <div id="progBars"></div>
-      </div>
-    </div>
-
-    <!-- APPLE HEALTH -->
-    <div class="panel" id="panel-apple">
-      <div class="panel-header">
-        <div class="panel-title">Apple Health</div>
-        <div class="panel-sub">Arraste o exportar.xml para visualizar sono, HRV e atividade</div>
-      </div>
-      <div class="ah-drop" id="ahDrop" onclick="document.getElementById('ahFile').click()" ondragover="event.preventDefault();this.style.borderColor='var(--neon)'" ondragleave="this.style.borderColor=''" ondrop="ahDrop2(event)">
-        <i class="ti ti-upload" aria-hidden="true"></i>
-        <span id="ahDropLabel">Soltar exportar.xml aqui ou clicar para selecionar</span>
-      </div>
-      <input type="file" id="ahFile" accept=".xml" style="display:none" onchange="ahHandleFile(this.files[0])">
-      <div class="ah-progress" id="ahProgress"></div>
-
-      <div id="ahContent" style="display:none">
-        <div class="kpi-grid" id="ahKpis"></div>
-
-        <div class="section">
-          <div class="section-label">Sono por noite — últimos 30 dias</div>
-          <div class="legend">
-            <span><span class="leg-dot" style="background:var(--neon)"></span>≥ 6h</span>
-            <span><span class="leg-dot" style="background:var(--red)"></span>&lt; 6h</span>
-          </div>
-          <div class="chart-card"><div class="chart-wrap"><canvas id="ahSleep" role="img" aria-label="Sono diário 30 dias"></canvas></div></div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px">
-          <div>
-            <div class="section-label">HRV (ms) — 14 dias</div>
-            <div class="chart-card"><div class="chart-wrap" style="height:150px"><canvas id="ahHrv" role="img" aria-label="HRV 14 dias"></canvas></div></div>
-          </div>
-          <div>
-            <div class="section-label">FC repouso — 14 dias</div>
-            <div class="chart-card"><div class="chart-wrap" style="height:150px"><canvas id="ahRhr" role="img" aria-label="FC repouso 14 dias"></canvas></div></div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-label">Passos diários — 14 dias</div>
-          <div class="legend">
-            <span><span class="leg-dot" style="background:var(--blue)"></span>≥ 10.000</span>
-            <span><span class="leg-dot" style="background:#4A5468"></span>&lt; 10.000</span>
-          </div>
-          <div class="chart-card"><div class="chart-wrap"><canvas id="ahSteps" role="img" aria-label="Passos 14 dias"></canvas></div></div>
-        </div>
-
-        <div class="section">
-          <div class="section-label">Água (mL) — 14 dias <span style="font-weight:400;color:var(--text3);font-size:10px;margin-left:6px">meta 2.000mL</span></div>
-          <div class="legend">
-            <span><span class="leg-dot" style="background:var(--neon)"></span>≥ 2.000mL</span>
-            <span><span class="leg-dot" style="background:var(--yellow)"></span>&lt; 2.000mL</span>
-          </div>
-          <div class="chart-card"><div class="chart-wrap"><canvas id="ahWater" role="img" aria-label="Água 14 dias"></canvas></div></div>
-        </div>
-      </div>
-    </div>
-
-  </main>
+<div class="tabs">
+  <button class="tab on" onclick="showTab('tracker',this)">Tracker diário</button>
+  <button class="tab" onclick="showTab('dashboard',this)">Progressão de carga</button>
 </div>
+
+<div id="tab-tracker"></div>
+<div id="tab-dashboard" style="display:none"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const STORAGE_KEY='tracker-state-v1';
+const HEVY_EX_MAP={
+  'supino inclinado':'Supino inclinado articulado','crucifixo no voador':'Peck deck / Crucifixo',
+  'peck deck':'Peck deck / Crucifixo','tríceps na polia':'Tríceps polia alta',
+  'triceps na polia':'Tríceps polia alta','máquina de fundos':'Tríceps máquina',
+  'maquina de fundos':'Tríceps máquina','puxada frontal':'Puxada frontal na polia',
+  'remada baixa':'Remada baixa na polia','remada cavalinho':'Remada cavalinho / Iso-Lateral','remada iso-lateral':'Remada cavalinho / Iso-Lateral','remada iso lateral':'Remada cavalinho / Iso-Lateral',
+  'rosca direta':'Rosca direta','rosca com rotação':'Rosca martelo / cabo',
+  'desenvolvimento de ombros':'Desenvolvimento','elevação lateral':'Elevação lateral',
+  'elevacao lateral':'Elevação lateral','aberturas invertidas':'Crucifixo inverso',
+  'leg press horizontal':'Leg press','cadeira extensora':'Cadeira extensora',
+  'cadeira flexora':'Cadeira flexora','cadeira abdutora':'Cadeira abdutora',
+  'elevação de panturrilha sentado':'Panturrilha','inseto morto':'Dead bug',
+  'elevação pélvica no solo':'Ponte','prancha abdominal':'Prancha frontal',
+  'supino sentado':'Supino reto (máquina)',
+};
 const WEEKDAY=['dom','seg','ter','qua','qui','sex','sáb'];
-const today=new Date();
-const days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(today.getDate()-(6-i));return d});
-
 function fmtDate(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')}
 function keyFor(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function isSameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
+function norm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
 
+const today=new Date();
+const days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(today.getDate()-(6-i));return d});
 let state={pain:{},training:{},sleep:{},water:{},supplements:{},hevySynced:{}};
 let hevyWorkouts=[];
 let chartInstances={};
 
-function loadState(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)state=Object.assign(state,JSON.parse(r));}catch(e){}}
-function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
-
-// Navigation
-function showPanel(id, el){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('nav-'+id)?.classList.add('active');
-  document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('active'));
-  if(el) el.classList.add('active');
-  if(id==='dashboard') renderDashboard();
+async function loadState(){
+  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)state=Object.assign(state,JSON.parse(raw));}catch(e){}
+}
+function saveState(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}
 }
 
-// Week range label
-function setWeekRange(){
-  const first=fmtDate(days[0]), last=fmtDate(days[6]);
-  document.getElementById('weekRange').textContent=first+' – '+last;
-}
-
-// Hevy sync
 async function syncHevy(manual=false){
-  const key=document.getElementById('apiKey').value.trim().replace(/[^a-zA-Z0-9-]/g,'');
+  const key=document.getElementById('apiKey').value.trim();
   if(!key)return;
   const st=document.getElementById('syncStatus');
   st.innerHTML='<span class="spin"></span>';
   try{
-    const r=await fetch(`https://api.hevyapp.com/v1/workouts?page=1&pageSize=10`,{headers:{'api-key':key}});
+    const cleanKey = key.replace(/[^a-zA-Z0-9\-]/g,'');
+    console.log('Usando chave:', cleanKey, 'len:', cleanKey.length);
+    const r=await fetch(`https://api.hevyapp.com/v1/workouts?page=1&pageSize=10`,{headers:{'api-key':cleanKey}});
+    console.log('Status:', r.status);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
     hevyWorkouts=data.workouts||[];
     applyHevyToTracker();
     const dt=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    st.innerHTML=`<span class="sync-ok"><i class="ti ti-check" aria-hidden="true"></i> Sync ${dt}</span>`;
+    st.innerHTML=`<span class="sync-ok"><i class="ti ti-check"></i> Sincronizado às ${dt}</span>`;
     renderTracker();
+    if(document.getElementById('tab-dashboard').style.display!=='none')renderDashboard();
   }catch(e){
-    st.innerHTML=`<span class="sync-err"><i class="ti ti-alert-circle" aria-hidden="true"></i> ${e.message}</span>`;
-    if(manual)renderTracker();
+    st.innerHTML=`<span class="sync-err"><i class="ti ti-alert-circle"></i> ${e.message}</span>`;
+    renderTracker();
   }
 }
 
@@ -379,8 +164,9 @@ function applyHevyToTracker(){
   for(const w of hevyWorkouts){
     const wDate=new Date(w.start_time);
     const k=keyFor(wDate);
-    if(!days.some(d=>isSameDay(d,wDate)))continue;
-    const title=(w.title||'').toLowerCase();
+    const inRange=days.some(d=>isSameDay(d,wDate));
+    if(!inRange)continue;
+    const title=norm(w.title);
     const isAcademia=['peito','tricep','costas','bicep','ombro','inferior'].some(kw=>title.includes(kw));
     if(isAcademia){
       if(!state.training[k]||state.training[k]==='nenhum')state.training[k]='academia';
@@ -389,6 +175,14 @@ function applyHevyToTracker(){
     }
   }
   saveState();
+}
+
+function showTab(id,btn){
+  document.getElementById('tab-tracker').style.display=id==='tracker'?'':'none';
+  document.getElementById('tab-dashboard').style.display=id==='dashboard'?'':'none';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+  if(id==='dashboard')renderDashboard();
 }
 
 function setPain(k,v){state.pain[k]=state.pain[k]===v?undefined:v;saveState();renderTracker()}
@@ -406,75 +200,79 @@ function renderTracker(){
   const waterCount=state.water[todayKey]||0;
   const todaySupp=state.supplements[todayKey]||{};
 
-  document.getElementById('kpi-pain').textContent=painHigh;
-  document.getElementById('kpi-trained').textContent=trained;
-  document.getElementById('kpi-water').textContent=waterAvg;
+  let h=`<div class="sum-grid">
+    <div class="metric"><div class="metric-n" style="color:${painHigh>0?'var(--red)':'var(--text)'}">${painHigh}</div><div class="metric-l">Dias com dor >3</div></div>
+    <div class="metric"><div class="metric-n">${trained}</div><div class="metric-l">Dias treinados</div></div>
+    <div class="metric"><div class="metric-n">${waterAvg}</div><div class="metric-l">Média de água</div></div>
+  </div>
 
-  // Dor
-  document.getElementById('painGrid').innerHTML=days.map(d=>{
-    const k=keyFor(d),isT=isSameDay(d,today),val=state.pain[k];
-    const cls=val===undefined?'':(val>3?'bad':'ok');
-    return`<div class="pain-col">
-      <span class="pain-day${isT?' today':''}">${WEEKDAY[d.getDay()]}</span>
-      <span class="pain-date">${fmtDate(d)}</span>
+  <p class="sec">Dor (0–10)</p>
+  <div class="day-grid">`;
+
+  for(const d of days){
+    const k=keyFor(d);const isT=isSameDay(d,today);const val=state.pain[k];
+    const cls=val===undefined?'':(val>3?'pain-bad':'pain-ok');
+    h+=`<div class="day-col">
+      <span class="day-name${isT?' today':''}">${WEEKDAY[d.getDay()]}</span>
+      <span class="day-date">${fmtDate(d)}</span>
       <select class="pain-sel ${cls}" onchange="setPain('${k}',this.value===''?undefined:+this.value)">
-        <option value="">—</option>
+        <option value="">–</option>
         ${Array.from({length:11},(_,i)=>`<option value="${i}"${val===i?' selected':''}>${i}</option>`).join('')}
       </select>
     </div>`;
-  }).join('');
+  }
 
-  // Treino
-  document.getElementById('trainRows').innerHTML=days.map(d=>{
-    const k=keyFor(d),isT=isSameDay(d,today),val=state.training[k],syn=state.hevySynced?.[k];
-    return`<div class="train-row">
-      <span class="train-label${isT?' today':''}">${WEEKDAY[d.getDay()]} ${fmtDate(d)}</span>
+  h+=`</div><p class="sec">Treino do dia</p>`;
+  for(const d of days){
+    const k=keyFor(d);const isT=isSameDay(d,today);const val=state.training[k];const synced=state.hevySynced?.[k];
+    h+=`<div class="row-line">
+      <span class="row-label${isT?' today':''}">${WEEKDAY[d.getDay()]} ${fmtDate(d)}</span>
       <div class="seg-group">
         ${[['casa','Casa'],['academia','Academia'],['ambos','Ambos'],['nenhum','Nenhum']].map(([v,l])=>
-          `<button class="seg${val===v?(syn&&v==='academia'?' hevy':' on'):''}" onclick="setTraining('${k}','${v}')">${l}</button>`
+          `<button class="seg${val===v?(synced&&v==='academia'?' hevy':' on'):''}" onclick="setTraining('${k}','${v}')">${l}</button>`
         ).join('')}
       </div>
-      ${syn?`<span class="badge-hevy">⚡${syn.split(' ')[0]}</span>`:''}
+      ${synced?`<span class="badge-hevy"><i class="ti ti-bolt"></i>${synced.split(' ')[0]}</span>`:''}
     </div>`;
-  }).join('');
+  }
 
-  // Sono
-  document.getElementById('sleepRows').innerHTML=days.map(d=>{
-    const k=keyFor(d),isT=isSameDay(d,today),val=state.sleep[k];
-    return`<div class="sleep-row">
-      <span class="train-label${isT?' today':''}">${WEEKDAY[d.getDay()]} ${fmtDate(d)}</span>
+  h+=`<p class="sec">Sono</p>`;
+  for(const d of days){
+    const k=keyFor(d);const isT=isSameDay(d,today);const val=state.sleep[k];
+    h+=`<div class="row-line">
+      <span class="row-label${isT?' today':''}">${WEEKDAY[d.getDay()]} ${fmtDate(d)}</span>
       <div class="seg-group">
         ${[['otimo','Ótimo'],['bom','Bom'],['regular','Regular'],['ruim','Ruim']].map(([v,l])=>
           `<button class="seg${val===v?' on':''}" onclick="setSleep('${k}','${v}')">${l}</button>`
         ).join('')}
       </div>
     </div>`;
-  }).join('');
+  }
 
-  // Água
-  document.getElementById('waterRow').innerHTML=
-    Array.from({length:8},(_,i)=>
-      `<span class="cup" onclick="setWater('${todayKey}',${i+1})" title="${i+1} copos">${i+1<=waterCount?'🥤':'⬜'}</span>`
-    ).join('')+`<span class="water-count">${waterCount}/8</span>`;
+  h+=`<p class="sec">Água — meta 8 copos (hoje, ${fmtDate(today)})</p>
+  <div class="cup-row">
+    ${Array.from({length:8},(_,i)=>`<span class="cup" onclick="setWater('${todayKey}',${i+1})" title="${i+1} copos">${i+1<=waterCount?'🥤':'⬜'}</span>`).join('')}
+    <span style="font-size:13px;color:var(--text2);margin-left:6px">${waterCount} / 8</span>
+  </div>
 
-  // Suplementos
-  document.getElementById('suppRow').innerHTML=
-    [['whey','Whey','ti-flask'],['creatina','Creatina','ti-pill'],['magnesio','Magnésio','ti-leaf']].map(([k2,l,ic])=>`
+  <p class="sec">Suplementos (hoje)</p>
+  <div class="supp-row">
+    ${[['whey','Whey protein','ti-flask'],['creatina','Creatina','ti-pill'],['magnesio','Magnésio','ti-leaf']].map(([k2,l,ic])=>`
       <button class="supp${todaySupp[k2]?' on':''}" onclick="toggleSupp('${todayKey}','${k2}')">
-        <i class="ti ${ic}" aria-hidden="true"></i>${l}
-        ${todaySupp[k2]?'<i class="ti ti-check" style="margin-left:4px" aria-hidden="true"></i>':''}
-      </button>`).join('');
-}
+        <i class="ti ${ic}" style="font-size:16px"></i>${l}
+        ${todaySupp[k2]?'<i class="ti ti-check" style="font-size:13px;margin-left:4px"></i>':''}
+      </button>`).join('')}
+  </div>`;
 
-// Dashboard
-const HEVY_EX_MAP={'supino inclinado':'Supino inclinado','crucifixo no voador':'Crucifixo (máquina)','peck deck':'Crucifixo (máquina)','tríceps na polia':'Tríceps polia','máquina de fundos':'Tríceps máquina','puxada frontal':'Puxada frontal','remada baixa':'Remada baixa','remada cavalinho':'Remada cavalinho','remada iso-lateral':'Remada iso-lateral','rosca direta':'Rosca direta','rosca com rotação':'Rosca martelo','desenvolvimento de ombros':'Desenvolvimento','elevação lateral':'Elevação lateral','aberturas invertidas':'Crucifixo inverso','leg press horizontal':'Leg press','cadeira extensora':'Cadeira extensora','cadeira flexora':'Cadeira flexora','cadeira abdutora':'Cadeira abdutora','elevação de panturrilha sentado':'Panturrilha','inseto morto':'Dead bug','elevação pélvica no solo':'Ponte','prancha abdominal':'Prancha','supino sentado':'Supino reto'};
-function norm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
+  document.getElementById('tab-tracker').innerHTML=h;
+}
 
 function renderDashboard(){
   if(!hevyWorkouts.length){
-    document.getElementById('progBars').innerHTML='<p style="color:var(--text3);font-size:13px">Sincronize com o Hevy para ver a progressão.</p>';
+    document.getElementById('tab-dashboard').innerHTML='<div class="no-data"><i class="ti ti-chart-bar"></i>Sincronize com o Hevy para ver a progressão de carga.</div>';
     return;
   }
+
   const exHistory={};
   for(const w of [...hevyWorkouts].reverse()){
     const wDate=new Date(w.start_time);
@@ -482,38 +280,57 @@ function renderDashboard(){
     for(const ex of(w.exercises||[])){
       const rawName=norm(ex.title||'');
       let mappedName=ex.title;
-      for(const[k,v] of Object.entries(HEVY_EX_MAP)){if(rawName.includes(norm(k))){mappedName=v;break;}}
+      for(const[k,v] of Object.entries(HEVY_EX_MAP)){
+        if(rawName.includes(norm(k))){mappedName=v;break;}
+      }
       const sets=ex.sets||[];
       const maxW=Math.max(0,...sets.map(s=>s.weight_kg||0));
       const avgR=sets.length?Math.round(sets.reduce((a,s)=>a+(s.reps||0),0)/sets.length):0;
-      if(maxW>0){if(!exHistory[mappedName])exHistory[mappedName]=[];exHistory[mappedName].push({date:dateLabel,weight:maxW,reps:avgR,rawDate:wDate});}
+      if(maxW>0){
+        if(!exHistory[mappedName])exHistory[mappedName]=[];
+        exHistory[mappedName].push({date:dateLabel,weight:maxW,reps:avgR,rawDate:wDate});
+      }
     }
   }
+
   const exNames=Object.keys(exHistory).filter(n=>exHistory[n].length>=1).sort();
-  const progress=exNames.map(n=>{const h=exHistory[n];const first=h[0].weight,last=h[h.length-1].weight;return{name:n,delta:last-first,pct:first>0?((last-first)/first*100):0,sessions:h.length,current:last};}).sort((a,b)=>b.delta-a.delta);
+  const progress=exNames.map(n=>{
+    const h=exHistory[n];
+    const first=h[0].weight,last=h[h.length-1].weight;
+    return{name:n,delta:last-first,pct:first>0?((last-first)/first*100):0,sessions:h.length,current:last};
+  }).sort((a,b)=>b.delta-a.delta);
+
   const totalSess=new Set(hevyWorkouts.map(w=>keyFor(new Date(w.start_time)))).size;
   const withProg=progress.filter(p=>p.delta>0).length;
   const bestEx=progress[0];
-  document.getElementById('d-total').textContent=totalSess;
-  document.getElementById('d-prog').textContent=withProg;
-  document.getElementById('d-best').textContent=bestEx?(bestEx.delta>=0?'+':'')+bestEx.delta.toFixed(1)+'kg':'—';
-  document.getElementById('d-best').title=bestEx?bestEx.name:'';
 
-  const sel=document.getElementById('exSel');
-  const cur=sel.value;
-  sel.innerHTML='<option value="">Selecione um exercício...</option>'+exNames.map(n=>`<option value="${n}">${n} (${exHistory[n].length} sessão${exHistory[n].length!==1?'ões':''})</option>`).join('');
-  if(cur)sel.value=cur;
+  let h=`<div class="sum-grid">
+    <div class="metric"><div class="metric-n">${totalSess}</div><div class="metric-l">Treinos registrados</div></div>
+    <div class="metric"><div class="metric-n" style="color:var(--green)">${withProg}</div><div class="metric-l">Exercícios evoluindo</div></div>
+    <div class="metric"><div class="metric-n" style="color:var(--accent)">${bestEx?'+'+bestEx.delta.toFixed(1)+'kg':'—'}</div><div class="metric-l">${bestEx?bestEx.name.split('/')[0].trim():'Melhor progressão'}</div></div>
+  </div>
 
-  document.getElementById('progBars').innerHTML=progress.slice(0,10).map(p=>{
+  <p class="sec">Evolução por exercício</p>
+  <select class="ex-sel" id="exSel" onchange="renderExChart(this.value)">
+    <option value="">Selecione um exercício…</option>
+    ${exNames.map(n=>`<option value="${n}">${n} (${exHistory[n].length} sessão${exHistory[n].length!==1?'ões':''})</option>`).join('')}
+  </select>
+  <div id="exChartArea"></div>
+
+  <p class="sec">Resumo de progressão</p>`;
+
+  for(const p of progress.slice(0,10)){
     const arrow=p.delta>0?'↑':p.delta<0?'↓':'→';
-    const color=p.delta>0?'var(--neon)':p.delta<0?'var(--red)':'var(--text3)';
+    const color=p.delta>0?'var(--green)':p.delta<0?'var(--red)':'var(--text3)';
     const barW=Math.min(100,Math.abs(p.pct));
-    return`<div class="prog-bar-item">
-      <div class="prog-bar-top"><span class="prog-bar-name">${p.name}</span><span class="prog-bar-delta" style="color:${color}">${arrow} ${p.delta>=0?'+':''}${p.delta.toFixed(1)}kg (${p.current.toFixed(1)}kg atual)</span></div>
-      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${barW}%;background:${color}"></div></div>
-      <div class="prog-bar-meta">${p.sessions} sessão${p.sessions!==1?'ões':''}</div>
+    h+=`<div class="prog-bar-item">
+      <div class="top"><span class="name">${p.name}</span><span class="delta" style="color:${color}">${arrow} ${p.delta>=0?'+':''}${p.delta.toFixed(1)}kg &nbsp;(${p.current.toFixed(1)}kg atual)</span></div>
+      <div class="track"><div class="fill" style="width:${barW}%;background:${color}"></div></div>
+      <div class="sessions">${p.sessions} sessão${p.sessions!==1?'ões':''}</div>
     </div>`;
-  }).join('');
+  }
+
+  document.getElementById('tab-dashboard').innerHTML=h;
   window._exHistory=exHistory;
 }
 
@@ -521,111 +338,243 @@ function renderExChart(exName){
   const area=document.getElementById('exChartArea');
   if(!exName){area.innerHTML='';return;}
   const history=window._exHistory?.[exName]||[];
-  if(!history.length){area.innerHTML='';return;}
+  if(!history.length){area.innerHTML='<div class="no-data">Sem dados para este exercício.</div>';return;}
   if(chartInstances.exChart){chartInstances.exChart.destroy();delete chartInstances.exChart;}
-  area.innerHTML=`<div class="chart-card">
+
+  area.innerHTML=`<div class="prog-card">
     <h3>${exName}</h3>
     <p>${history.length} sessão${history.length!==1?'ões':''} registrada${history.length!==1?'s':''}</p>
-    <div class="legend"><span><span class="leg-dot" style="background:var(--neon)"></span>Carga máx (kg)</span><span><span class="leg-dot" style="background:var(--blue);border-radius:50%"></span>Reps médias</span></div>
-    <div class="chart-wrap"><canvas id="exChart" role="img" aria-label="Progressão ${exName}"></canvas></div>
+    <div class="legend">
+      <span><span class="leg-dot" style="background:#2a78d6"></span>Carga máxima (kg)</span>
+      <span><span class="leg-dot" style="background:#1baf7a;border-radius:50%"></span>Média de reps</span>
+    </div>
+    <div class="chart-wrap"><canvas id="exChart" role="img" aria-label="Gráfico de progressão de ${exName}"></canvas></div>
   </div>`;
+
   chartInstances.exChart=new Chart(document.getElementById('exChart'),{
     data:{labels:history.map(h=>h.date),datasets:[
-      {type:'line',label:'Carga (kg)',data:history.map(h=>h.weight),borderColor:'#4FFFB0',backgroundColor:'rgba(79,255,176,.06)',borderWidth:2,pointBackgroundColor:'#4FFFB0',pointRadius:5,yAxisID:'y',tension:.3},
-      {type:'bar',label:'Reps',data:history.map(h=>h.reps),backgroundColor:'rgba(59,130,246,.3)',borderColor:'#3B82F6',borderWidth:1,yAxisID:'y2',borderRadius:3},
+      {type:'line',label:'Carga máx (kg)',data:history.map(h=>h.weight),borderColor:'#2a78d6',backgroundColor:'rgba(42,120,214,.08)',borderWidth:2,pointBackgroundColor:'#2a78d6',pointRadius:5,pointHoverRadius:7,yAxisID:'y',tension:.3},
+      {type:'bar',label:'Reps (média)',data:history.map(h=>h.reps),backgroundColor:'rgba(27,175,122,.25)',borderColor:'#1baf7a',borderWidth:1,yAxisID:'y2',borderRadius:3},
     ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?`${ctx.raw.toFixed(1)} kg`:`${ctx.raw} reps`}}},scales:{x:{ticks:{font:{size:10},color:'#4A5468',maxRotation:45,autoSkip:false},grid:{color:'rgba(255,255,255,.04)'}},y:{position:'left',title:{display:true,text:'kg',font:{size:10},color:'#4A5468'},ticks:{font:{size:10},color:'#4A5468'},grid:{color:'rgba(255,255,255,.04)'}},y2:{position:'right',title:{display:true,text:'reps',font:{size:10},color:'#4A5468'},ticks:{font:{size:10},color:'#4A5468'},grid:{display:false}}}}
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?`${ctx.raw.toFixed(1)} kg`:`${ctx.raw} reps`}}},
+      scales:{
+        x:{ticks:{font:{size:11},color:'#898781',maxRotation:45,autoSkip:false},grid:{display:false}},
+        y:{position:'left',title:{display:true,text:'kg',font:{size:11},color:'#898781'},ticks:{font:{size:11},color:'#898781'},grid:{color:'rgba(0,0,0,.06)'}},
+        y2:{position:'right',title:{display:true,text:'reps',font:{size:11},color:'#898781'},ticks:{font:{size:11},color:'#898781'},grid:{display:false}}
+      }
+    }
   });
 }
 
-// Apple Health
-function ahDrop2(e){e.preventDefault();document.getElementById('ahDrop').style.borderColor='';const f=e.dataTransfer.files[0];if(f)ahHandleFile(f);}
-
-function ahHandleFile(file){
-  if(!file)return;
-  const prog=document.getElementById('ahProgress');
-  prog.className='ah-progress';
-  document.getElementById('ahDropLabel').textContent='Lendo '+file.name+' ('+( file.size/1024/1024).toFixed(0)+'MB)...';
-  prog.textContent='Iniciando leitura em chunks...';
-  const CHUNK=4*1024*1024,total=file.size;
-  let offset=0,buffer='';
-  const today2=new Date();
-  const days30=[],days14=[];
-  for(let i=29;i>=0;i--){const d=new Date(today2);d.setDate(today2.getDate()-i);days30.push(d);}
-  for(let i=13;i>=0;i--){const d=new Date(today2);d.setDate(today2.getDate()-i);days14.push(d);}
-  function fD(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
-  function kD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-  const sBy={},hBy={},rBy={},stBy={},wBy={};
-  function procLine(line){
-    if(!line.includes('startDate='))return;
-    const sd=(line.match(/startDate="(\d{4}-\d{2}-\d{2})/)||[])[1];
-    const val=(line.match(/value="([^"]+)"/)||[])[1];
-    if(!sd||!val)return;
-    if(line.includes('SleepAnalysis')&&line.includes('Asleep')&&!line.includes('Awake')){
-      try{const s=new Date((line.match(/startDate="([^"]+)"/)||[])[1]);const e=new Date((line.match(/endDate="([^"]+)"/)||[])[1]);const dur=(e-s)/3600000;if(dur>0&&dur<16){const dk=e.toISOString().slice(0,10);sBy[dk]=(sBy[dk]||0)+dur;}}catch(e){}
-    }else if(line.includes('HeartRateVariabilitySDNN')){if(!hBy[sd])hBy[sd]=[];hBy[sd].push(parseFloat(val));}
-    else if(line.includes('RestingHeartRate')){if(!rBy[sd])rBy[sd]=[];rBy[sd].push(parseFloat(val));}
-    else if(line.includes('StepCount')){stBy[sd]=(stBy[sd]||0)+parseFloat(val);}
-    else if(line.includes('DietaryWater')){wBy[sd]=(wBy[sd]||0)+parseFloat(val);}
-  }
-  function readChunk(){
-    const slice=file.slice(offset,offset+CHUNK);
-    const r=new FileReader();
-    r.onload=function(e){
-      buffer+=e.target.result;
-      const last=buffer.lastIndexOf('\n');
-      if(last>0){buffer.slice(0,last).split('\n').forEach(procLine);buffer=buffer.slice(last+1);}
-      offset+=CHUNK;
-      prog.textContent='Lendo... '+Math.min(Math.round(offset/total*100),100)+'%';
-      if(offset<total){setTimeout(readChunk,0);}
-      else{
-        if(buffer)buffer.split('\n').forEach(procLine);
-        prog.textContent='Renderizando...';
-        setTimeout(()=>renderAH(days30,days14,fD,kD,sBy,hBy,rBy,stBy,wBy,prog),50);
-      }
-    };
-    r.readAsText(slice,'UTF-8');
-  }
-  readChunk();
+async function init(){
+  await loadState();
+  renderTracker();
+  await syncHevy(false);
 }
-
-function renderAH(days30,days14,fD,kD,sBy,hBy,rBy,stBy,wBy,prog){
-  const sL=days30.map(d=>fD(d)),sD=days30.map(d=>parseFloat((sBy[kD(d)]||0).toFixed(1)));
-  const hL=days14.map(d=>fD(d)),hD=days14.map(d=>{const v=hBy[kD(d)];return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null;});
-  const rL=days14.map(d=>fD(d)),rD=days14.map(d=>{const v=rBy[kD(d)];return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null;});
-  const stL=days14.map(d=>fD(d)),stD=days14.map(d=>Math.round(stBy[kD(d)]||0));
-  const wL=days14.map(d=>fD(d)),wD=days14.map(d=>Math.round(wBy[kD(d)]||0));
-  const sAvg=sD.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(sD.filter(v=>v>0).length,1);
-  const hArr=hD.filter(v=>v),hAvg=hArr.length?hArr.reduce((a,b)=>a+b,0)/hArr.length:0;
-  const rArr=rD.filter(v=>v),rAvg=rArr.length?rArr.reduce((a,b)=>a+b,0)/rArr.length:0;
-  const stAvg=stD.reduce((a,b)=>a+b,0)/stD.length;
-
-  document.getElementById('ahKpis').innerHTML=`
-    <div class="kpi green"><div class="kpi-label">Sono médio</div><div class="kpi-value green">${sAvg.toFixed(1)}h</div></div>
-    <div class="kpi blue"><div class="kpi-label">HRV médio</div><div class="kpi-value blue">${Math.round(hAvg)}ms</div></div>
-    <div class="kpi yellow"><div class="kpi-label">FC repouso</div><div class="kpi-value" style="color:var(--yellow)">${Math.round(rAvg)} bpm</div></div>
-    <div class="kpi"><div class="kpi-label">Passos médios</div><div class="kpi-value">${(stAvg/1000).toFixed(1)}k</div></div>`;
-
-  const grid='rgba(255,255,255,.05)',muted='#4A5468';
-  ['ahSleep','ahHrv','ahRhr','ahSteps','ahWater'].forEach(id=>{const c=Chart.getChart(id);if(c)c.destroy();});
-
-  new Chart(document.getElementById('ahSleep'),{type:'bar',data:{labels:sL,datasets:[{data:sD,backgroundColor:sD.map(v=>v<6?'#FF4D4D':'#4FFFB0'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'h'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{display:false}},y:{min:0,max:10,ticks:{font:{size:10},color:muted,callback:v=>v+'h'},grid:{color:grid}}}}});
-  new Chart(document.getElementById('ahHrv'),{type:'line',data:{labels:hL,datasets:[{data:hD,borderColor:'#3B82F6',backgroundColor:'rgba(59,130,246,.08)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3B82F6',tension:.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'ms'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+'ms'},grid:{color:grid}}}}});
-  new Chart(document.getElementById('ahRhr'),{type:'line',data:{labels:rL,datasets:[{data:rD,borderColor:'#FACC15',backgroundColor:'rgba(250,204,21,.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#FACC15',tension:.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' bpm'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+' bpm'},grid:{color:grid}}}}});
-  new Chart(document.getElementById('ahSteps'),{type:'bar',data:{labels:stL,datasets:[{data:stD,backgroundColor:stD.map(v=>v>=10000?'#3B82F6':'#4A5468'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' passos'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:grid}}}}});
-  new Chart(document.getElementById('ahWater'),{type:'bar',data:{labels:wL,datasets:[{data:wD,backgroundColor:wD.map(v=>v>=2000?'#4FFFB0':'#FACC15'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' mL'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v>0?(v/1000).toFixed(1)+'L':'0'},grid:{color:grid}}}}});
-
-  document.getElementById('ahContent').style.display='';
-  prog.className='ah-progress ok';
-  prog.textContent='✓ Sono:'+sAvg.toFixed(1)+'h · HRV:'+Math.round(hAvg)+'ms · FC:'+Math.round(rAvg)+'bpm · Passos:'+Math.round(stAvg/1000)+'k';
-  document.getElementById('ahDropLabel').textContent='Clique para atualizar';
-}
-
-// Init
-loadState();
-setWeekRange();
-renderTracker();
-syncHevy(false);
+init();
 </script>
 </body>
 </html>
+
+<!-- ===== APPLE HEALTH SECTION ===== -->
+<script>
+(function(){
+// Injeta aba Apple Health e visualizador após carregamento
+function injectAppleHealth(){
+  // Adiciona aba
+  const tabs = document.querySelector('.tabs');
+  if(!tabs || document.getElementById('tab-apple')) return;
+  const btn = document.createElement('button');
+  btn.className = 'tab';
+  btn.id = 'tab-btn-apple';
+  btn.textContent = 'Apple Health';
+  btn.onclick = function(){ showAppleTab(this); };
+  tabs.appendChild(btn);
+
+  // Cria painel
+  const panel = document.createElement('div');
+  panel.id = 'tab-apple';
+  panel.style.display = 'none';
+  panel.innerHTML = `
+    <div style="margin-bottom:16px">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Arraste o arquivo <strong>exportar.xml</strong> (extraído do zip do Apple Health) ou clique para selecionar.</p>
+      <div id="ah-dropzone" style="border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;color:var(--text2);font-size:13px;transition:background .15s" onclick="document.getElementById('ah-file').click()" ondragover="event.preventDefault();this.style.background='var(--surface1)'" ondragleave="this.style.background=''" ondrop="ahHandleDrop(event)">
+        <i class="ti ti-upload" style="font-size:28px;display:block;margin-bottom:8px;color:var(--text3)"></i>
+        <span id="ah-drop-label">Soltar exportar.xml aqui ou clicar para selecionar</span>
+      </div>
+      <input type="file" id="ah-file" accept=".xml" style="display:none" onchange="ahHandleFile(this.files[0])">
+      <div id="ah-progress" style="font-size:12px;color:var(--text2);margin-top:8px;display:none"></div>
+    </div>
+    <div id="ah-content" style="display:none">
+      <div id="ah-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem"></div>
+      <p class="sec">Sono por noite (horas) — últimos 30 dias</p>
+      <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#85b7eb"></span>≥ 6h</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#f09595"></span>&lt; 6h</span>
+      </div>
+      <div style="position:relative;width:100%;height:150px;margin-bottom:1.25rem"><canvas id="ah-sleep" role="img" aria-label="Gráfico de sono diário"></canvas></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.25rem">
+        <div>
+          <p class="sec">HRV (ms) — últimos 14 dias</p>
+          <div style="position:relative;width:100%;height:120px"><canvas id="ah-hrv" role="img" aria-label="Gráfico de HRV diário"></canvas></div>
+        </div>
+        <div>
+          <p class="sec">FC repouso (bpm) — últimos 14 dias</p>
+          <div style="position:relative;width:100%;height:120px"><canvas id="ah-rhr" role="img" aria-label="Gráfico de FC repouso diária"></canvas></div>
+        </div>
+      </div>
+      <p class="sec">Passos diários — últimos 14 dias</p>
+      <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#85b7eb"></span>≥ 10.000</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#d3d1c7"></span>&lt; 10.000</span>
+      </div>
+      <div style="position:relative;width:100%;height:130px;margin-bottom:1.25rem"><canvas id="ah-steps" role="img" aria-label="Gráfico de passos diários"></canvas></div>
+      <p class="sec">Água (mL) — últimos 14 dias <span style="font-weight:400;color:var(--text3);font-size:10px">meta: 2.000mL/dia</span></p>
+      <div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1baf7a"></span>≥ 2.000mL</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fac775"></span>&lt; 2.000mL</span>
+      </div>
+      <div style="position:relative;width:100%;height:130px"><canvas id="ah-water" role="img" aria-label="Gráfico de consumo de água diário"></canvas></div>
+    </div>`;
+
+  document.getElementById('tab-tracker').parentNode.appendChild(panel);
+}
+
+function showAppleTab(btn){
+  document.getElementById('tab-tracker').style.display='none';
+  document.getElementById('tab-dashboard').style.display='none';
+  document.getElementById('tab-apple').style.display='';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function ahHandleDrop(e){
+  e.preventDefault();
+  document.getElementById('ah-dropzone').style.background='';
+  const file = e.dataTransfer.files[0];
+  if(file) ahHandleFile(file);
+}
+
+window.ahHandleFile = function(file){
+  if(!file) return;
+  document.getElementById('ah-drop-label').textContent = 'Carregando ' + file.name + '...';
+  document.getElementById('ah-progress').style.display='block';
+  document.getElementById('ah-progress').textContent = 'Processando XML...';
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const text = e.target.result;
+    document.getElementById('ah-progress').textContent = 'Extraindo dados...';
+    setTimeout(()=>{ ahParseAndRender(text); }, 50);
+  };
+  reader.readAsText(file, 'UTF-8');
+};
+
+function ahParseAndRender(text){
+  const today = new Date();
+  const cutoff30 = new Date(today); cutoff30.setDate(today.getDate()-29);
+  const cutoff14 = new Date(today); cutoff14.setDate(today.getDate()-13);
+
+  function fmtD(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+  function keyD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  // Gera arrays de datas
+  const days30=[], days14=[];
+  for(let i=29;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); days30.push(d); }
+  for(let i=13;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); days14.push(d); }
+
+  const sleepByDay={}, hrvByDay={}, rhrByDay={}, stepsByDay={}, waterByDay={};
+
+  // Parseia linha a linha
+  const lines = text.split('\n');
+  for(const line of lines){
+    if(!line.includes('startDate=')) continue;
+    const mDate = line.match(/startDate="(\d{4}-\d{2}-\d{2})/);
+    const mEnd  = line.match(/endDate="(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
+    const mVal  = line.match(/value="([^"]+)"/);
+    if(!mDate) continue;
+    const d = mDate[1];
+    const val = mVal ? mVal[1] : null;
+
+    if(line.includes('SleepAnalysis') && val && val !== 'HKCategoryValueSleepAnalysisInBed' && val !== 'HKCategoryValueSleepAnalysisAwake'){
+      const mS = line.match(/startDate="([^"]+)"/);
+      const mE = line.match(/endDate="([^"]+)"/);
+      if(mS && mE){
+        try{
+          const s=new Date(mS[1].replace(' ','T')), e=new Date(mE[1].replace(' ','T'));
+          const dur=(e-s)/3600000;
+          const dayKey = e.toISOString().slice(0,10);
+          sleepByDay[dayKey]=(sleepByDay[dayKey]||0)+dur;
+        }catch(err){}
+      }
+    } else if(line.includes('HeartRateVariabilitySDNN') && val){
+      if(!hrvByDay[d]) hrvByDay[d]=[];
+      hrvByDay[d].push(parseFloat(val));
+    } else if(line.includes('RestingHeartRate') && val){
+      if(!rhrByDay[d]) rhrByDay[d]=[];
+      rhrByDay[d].push(parseFloat(val));
+    } else if(line.includes('StepCount') && val){
+      stepsByDay[d]=(stepsByDay[d]||0)+parseFloat(val);
+    } else if(line.includes('DietaryWater') && val){
+      waterByDay[d]=(waterByDay[d]||0)+parseFloat(val);
+    }
+  }
+
+  // Prepara dados
+  const sleepLabels=days30.map(d=>fmtD(d));
+  const sleepData=days30.map(d=>parseFloat((sleepByDay[keyD(d)]||0).toFixed(1)));
+  const hrvLabels=days14.map(d=>fmtD(d));
+  const hrvData=days14.map(d=>{ const v=hrvByDay[keyD(d)]; return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null; });
+  const rhrLabels=days14.map(d=>fmtD(d));
+  const rhrData=days14.map(d=>{ const v=rhrByDay[keyD(d)]; return v?parseFloat((v.reduce((a,b)=>a+b,0)/v.length).toFixed(0)):null; });
+  const stepsLabels=days14.map(d=>fmtD(d));
+  const stepsData=days14.map(d=>Math.round(stepsByDay[keyD(d)]||0));
+  const waterLabels=days14.map(d=>fmtD(d));
+  const waterData=days14.map(d=>Math.round(waterByDay[keyD(d)]||0));
+
+  // KPIs
+  const sleepAvg = sleepData.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(sleepData.filter(v=>v>0).length,1);
+  const hrvAvg = hrvData.filter(v=>v).reduce((a,b)=>a+b,0)/Math.max(hrvData.filter(v=>v).length,1);
+  const rhrAvg = rhrData.filter(v=>v).reduce((a,b)=>a+b,0)/Math.max(rhrData.filter(v=>v).length,1);
+  const stepsAvg = stepsData.reduce((a,b)=>a+b,0)/stepsData.length;
+  const waterAvg = waterData.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(waterData.filter(v=>v>0).length,1);
+
+  document.getElementById('ah-kpis').innerHTML = `
+    <div class="metric"><div class="metric-n">${sleepAvg.toFixed(1)}h</div><div class="metric-l">Sono médio</div></div>
+    <div class="metric"><div class="metric-n">${Math.round(hrvAvg)}ms</div><div class="metric-l">HRV médio</div></div>
+    <div class="metric"><div class="metric-n">${Math.round(rhrAvg)} bpm</div><div class="metric-l">FC repouso</div></div>
+    <div class="metric"><div class="metric-n">${Math.round(stepsAvg/1000*10)/10}k</div><div class="metric-l">Passos médios</div></div>`;
+
+  const grid='#e1e0d9', muted='#898781';
+
+  // Destrói charts anteriores
+  ['ah-sleep','ah-hrv','ah-rhr','ah-steps','ah-water'].forEach(id=>{
+    const c=Chart.getChart(id); if(c) c.destroy();
+  });
+
+  new Chart(document.getElementById('ah-sleep'),{type:'bar',data:{labels:sleepLabels,datasets:[{data:sleepData,backgroundColor:sleepData.map(v=>v<6?'#f09595':'#85b7eb'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'h'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{display:false}},y:{min:0,max:10,ticks:{font:{size:10},color:muted,callback:v=>v+'h'},grid:{color:grid}}}}});
+
+  new Chart(document.getElementById('ah-hrv'),{type:'line',data:{labels:hrvLabels,datasets:[{data:hrvData,borderColor:'#1baf7a',backgroundColor:'rgba(27,175,122,.08)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1baf7a',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'ms'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+'ms'},grid:{color:grid}}}}});
+
+  new Chart(document.getElementById('ah-rhr'),{type:'line',data:{labels:rhrLabels,datasets:[{data:rhrData,borderColor:'#e34948',backgroundColor:'rgba(227,73,72,.06)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#e34948',tension:0.3,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' bpm'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v+' bpm'},grid:{color:grid}}}}});
+
+  new Chart(document.getElementById('ah-steps'),{type:'bar',data:{labels:stepsLabels,datasets:[{data:stepsData,backgroundColor:stepsData.map(v=>v>=10000?'#85b7eb':'#d3d1c7'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' passos'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:grid}}}}});
+
+  new Chart(document.getElementById('ah-water'),{type:'bar',data:{labels:waterLabels,datasets:[{data:waterData,backgroundColor:waterData.map(v=>v>=2000?'#1baf7a':'#fac775'),borderRadius:3,borderSkipped:'bottom'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toLocaleString('pt-BR')+' mL'}}},scales:{x:{ticks:{font:{size:10},color:muted,maxRotation:45,autoSkip:true,maxTicksLimit:7},grid:{display:false}},y:{ticks:{font:{size:10},color:muted,callback:v=>v>0?(v/1000).toFixed(1)+'L':'0'},grid:{color:grid}}}}});
+
+  document.getElementById('ah-content').style.display='';
+  document.getElementById('ah-progress').textContent='✓ Dados carregados com sucesso.';
+  document.getElementById('ah-drop-label').textContent='Clique para atualizar com nova exportação';
+}
+
+// Injeta quando o DOM estiver pronto
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', injectAppleHealth);
+} else {
+  injectAppleHealth();
+}
+})();
+</script>

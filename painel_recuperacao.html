@@ -143,7 +143,7 @@ async function syncHevy(manual=false){
   try{
     const cleanKey = key.replace(/[^a-zA-Z0-9\-]/g,'');
     console.log('Usando chave:', cleanKey, 'len:', cleanKey.length);
-    const r=await fetch('https://api.hevyapp.com/v1/workouts?page=1&pageSize=20',{method:'GET',headers:{'api-key':cleanKey}});
+    const r=await fetch(`https://api.hevyapp.com/v1/workouts?page=1&pageSize=5`,{headers:{'api-key':cleanKey}});
     console.log('Status:', r.status);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();

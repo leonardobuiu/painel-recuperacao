@@ -392,8 +392,7 @@ function applyHevyToTracker(){
     const title=(w.title||'').toLowerCase();
     const isAcademia=['peito','tricep','costas','bicep','ombro','inferior'].some(kw=>title.includes(kw));
     if(isAcademia){
-      if(!state.training[k]||state.training[k]==='nenhum')state.training[k]='academia';
-      else if(state.training[k]==='casa')state.training[k]='ambos';
+      if(!state.training[k]||state.training[k]==='nao')state.training[k]='feito';
       state.hevySynced[k]=w.title;
     }
   }
@@ -409,7 +408,7 @@ function toggleSupp(k,s){if(!state.supplements[k])state.supplements[k]={};state.
 function renderTracker(){
   const todayKey=keyFor(today);
   const painHigh=days.filter(d=>{const p=state.pain[keyFor(d)];return p!==undefined&&p>3}).length;
-  const trained=days.filter(d=>{const t=state.training[keyFor(d)];return t&&t!=='nenhum'}).length;
+  const trained=days.filter(d=>state.training[keyFor(d)]==='feito').length;
   const waterVals=days.map(d=>state.water[keyFor(d)]||0);
   const waterAvg=(waterVals.reduce((a,b)=>a+b,0)/days.length).toFixed(1);
   const waterCount=state.water[todayKey]||0;
@@ -423,56 +422,57 @@ function renderTracker(){
   document.getElementById('painGrid').innerHTML=days.map(d=>{
     const k=keyFor(d),isT=isSameDay(d,today),val=state.pain[k];
     const cls=val===undefined?'':(val>3?'bad':'ok');
-    return`<div class="pain-col">
-      <span class="pain-day${isT?' today':''}">${WEEKDAY[d.getDay()]}</span>
-      <span class="pain-date">${fmtDate(d)}</span>
-      <select class="pain-sel ${cls}" onchange="setPain('${k}',this.value===''?undefined:+this.value)">
-        <option value="">—</option>
-        ${Array.from({length:11},(_,i)=>`<option value="${i}"${val===i?' selected':''}>${i}</option>`).join('')}
-      </select>
-    </div>`;
+    const opts=Array.from({length:11},(_,i)=>'<option value="'+i+'"'+(val===i?' selected':'')+'>'+i+'</option>').join('');
+    return '<div class="pain-col">'
+      +'<span class="pain-day'+(isT?' today':'')+'">'+WEEKDAY[d.getDay()]+'</span>'
+      +'<span class="pain-date">'+fmtDate(d)+'</span>'
+      +'<select class="pain-sel '+cls+'" onchange="setPain(&apos;'+k+'&apos;,this.value===&apos;&apos;?undefined:+this.value)">'
+      +'<option value="">—</option>'+opts+'</select>'
+      +'</div>';
   }).join('');
 
   // Treino
   document.getElementById('trainRows').innerHTML=days.map(d=>{
     const k=keyFor(d),isT=isSameDay(d,today),val=state.training[k],syn=state.hevySynced?.[k];
-    return`<div class="train-row">
-      <span class="train-label${isT?' today':''}">${WEEKDAY[d.getDay()]} ${fmtDate(d)}</span>
-      <div class="seg-group">
-        ${[['casa','Casa'],['academia','Academia'],['ambos','Ambos'],['nenhum','Nenhum']].map(([v,l])=>
-          `<button class="seg${val===v?(syn&&v==='academia'?' hevy':' on'):''}" onclick="setTraining('${k}','${v}')">${l}</button>`
-        ).join('')}
-      </div>
-      ${syn?`<span class="badge-hevy">⚡${syn.split(' ')[0]}</span>`:''}
-    </div>`;
+    const btns=[['feito','✓ Feito'],['nao','✗ Não feito']].map(function(o){
+      const v=o[0],l=o[1];
+      const cls=val===v?(syn&&v==='feito'?' hevy':' on'):'';
+      return '<button class="seg'+cls+'" onclick="setTraining(&apos;'+k+'&apos;,&apos;'+v+'&apos;)">'+l+'</button>';
+    }).join('');
+    const badge=syn?'<span class="badge-hevy">⚡'+syn.split(' ')[0]+'</span>':'';
+    return '<div class="train-row">'
+      +'<span class="train-label'+(isT?' today':'')+'">'+WEEKDAY[d.getDay()]+' '+fmtDate(d)+'</span>'
+      +'<div class="seg-group">'+btns+'</div>'
+      +badge+'</div>';
   }).join('');
 
   // Sono
   document.getElementById('sleepRows').innerHTML=days.map(d=>{
     const k=keyFor(d),isT=isSameDay(d,today),val=state.sleep[k];
-    return`<div class="sleep-row">
-      <span class="train-label${isT?' today':''}">${WEEKDAY[d.getDay()]} ${fmtDate(d)}</span>
-      <div class="seg-group">
-        ${[['otimo','Ótimo'],['bom','Bom'],['regular','Regular'],['ruim','Ruim']].map(([v,l])=>
-          `<button class="seg${val===v?' on':''}" onclick="setSleep('${k}','${v}')">${l}</button>`
-        ).join('')}
-      </div>
-    </div>`;
+    const btns=[['otimo','Ótimo'],['bom','Bom'],['regular','Regular'],['ruim','Ruim']].map(function(o){
+      const v=o[0],l=o[1];
+      return '<button class="seg'+(val===v?' on':'')+'" onclick="setSleep(&apos;'+k+'&apos;,&apos;'+v+'&apos;)">'+l+'</button>';
+    }).join('');
+    return '<div class="sleep-row">'
+      +'<span class="train-label'+(isT?' today':'')+'">'+WEEKDAY[d.getDay()]+' '+fmtDate(d)+'</span>'
+      +'<div class="seg-group">'+btns+'</div></div>';
   }).join('');
 
   // Água
-  document.getElementById('waterRow').innerHTML=
-    Array.from({length:8},(_,i)=>
-      `<span class="cup" onclick="setWater('${todayKey}',${i+1})" title="${i+1} copos">${i+1<=waterCount?'🥤':'⬜'}</span>`
-    ).join('')+`<span class="water-count">${waterCount}/8 <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">(${waterCount*250}mL / 2.000mL)</span></span>`;
+  const cups=Array.from({length:8},(_,i)=>{
+    return '<span class="cup" onclick="setWater(&apos;'+todayKey+'&apos;,'+(i+1)+')" title="'+(i+1)+' copos">'+(i+1<=waterCount?'🥤':'⬜')+'</span>';
+  }).join('');
+  document.getElementById('waterRow').innerHTML=cups
+    +'<span class="water-count">'+waterCount+'/8'
+    +' <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">('+waterCount*250+'mL / 2.000mL)</span></span>';
 
   // Suplementos
   document.getElementById('suppRow').innerHTML=
-    [['whey','Whey','ti-flask'],['creatina','Creatina','ti-pill'],['magnesio','Magnésio','ti-leaf']].map(([k2,l,ic])=>`
-      <button class="supp${todaySupp[k2]?' on':''}" onclick="toggleSupp('${todayKey}','${k2}')">
-        <i class="ti ${ic}" aria-hidden="true"></i>${l}
-        ${todaySupp[k2]?'<i class="ti ti-check" style="margin-left:4px" aria-hidden="true"></i>':''}
-      </button>`).join('');
+    [['whey','Whey','ti-flask'],['creatina','Creatina','ti-pill'],['magnesio','Magnésio','ti-leaf']].map(function(s){
+      const k2=s[0],l=s[1],ic=s[2];
+      const on=todaySupp[k2];
+      return '<button class="supp'+(on?' on':'')+'" onclick="toggleSupp(&apos;'+todayKey+'&apos;,&apos;'+k2+'&apos;)"><i class="ti '+ic+'" aria-hidden="true"></i>'+l+(on?'<i class="ti ti-check" style="margin-left:4px" aria-hidden="true"></i>':'')+'</button>';
+    }).join('');
 }
 
 // Dashboard

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Criar Rotinas Seg–Sex — Hevy</title>
+<style>
+body{font-family:-apple-system,sans-serif;padding:24px;max-width:700px;margin:0 auto;background:#f8f7f4;color:#0b0b0b}
+h2{font-size:20px;font-weight:500;margin-bottom:4px}
+.sub{font-size:13px;color:#666;margin-bottom:20px}
+input{width:100%;padding:9px 12px;border:.5px solid #ccc;border-radius:8px;font-family:monospace;font-size:12px;margin-bottom:12px;box-sizing:border-box}
+.btn{background:#2a78d6;color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;width:100%;margin-bottom:8px}
+.btn:hover{opacity:.85}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-green{background:#1baf7a}
+.routine-card{background:#fff;border:.5px solid #ddd;border-radius:10px;padding:16px;margin-bottom:12px}
+.routine-card h3{font-size:15px;font-weight:500;margin-bottom:8px}
+.ex-list{font-size:12px;color:#555;line-height:1.8}
+.status-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.badge{font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500}
+.b-wait{background:#f1f0ec;color:#888}
+.b-ok{background:#e1f5ee;color:#1baf7a;border:.5px solid #9fe1cb}
+.b-err{background:#fcebeb;color:#d03b3b;border:.5px solid #f7c1c1}
+.b-load{background:#e6f1fb;color:#2a78d6;border:.5px solid #b5d4f4}
+.log{background:#1a1d27;color:#e8eaf0;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;margin-top:12px;line-height:1.7;max-height:200px;overflow-y:auto;display:none}
+.spin{display:inline-block;width:12px;height:12px;border:1.5px solid #ccc;border-top-color:#2a78d6;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<h2>Criar Rotinas Seg–Sex — Hevy</h2>
+<p class="sub">Cria automaticamente as 5 rotinas do plano (Segunda a Sexta) na sua conta Hevy.</p>
+
+<input type="password" id="apiKey" placeholder="Chave de API do Hevy..." value="002e30b6-d5bb-45b7-a2b4-6eb6f0122eb0">
+
+<div id="statusCards"></div>
+
+<button class="btn" id="btnCriar" onclick="criarTodas()">🚀 Criar as 5 rotinas no Hevy</button>
+<div id="statusCards" style="margin-top:16px"></div>
+<div id="log" style="background:#1a1d27;color:#e8eaf0;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;margin-top:12px;line-height:1.7;max-height:300px;overflow-y:auto;display:none"></div>
+<div class="log" id="log"></div>
+
+<script>
+// IDs extraídos do print
+const IDS = {
+  esteira:          '243710DE',  // Treadmill — aquecimento 20 min
+  lateral_band:     'EC02979E',  // Lateral Band Walks — estabilização quadril/adutor
+  isometria_adutor: '8BEBFED6',  // Hip Adduction (Machine) — isometria de adutor
+  // Treino A — Peito + Tríceps
+  supino_inclinado: 'FBF92739',   // Incline Chest Press (Machine)
+  crucifixo_voador: '78683336',   // Chest Fly (Machine)
+  supino_sentado:   '7EB3F7C3',   // Chest Press (Machine)
+  triceps_polia:    '93A552C6',   // Triceps Pushdown
+  maquina_fundos:   '5122E7D9',   // Máquina De Fundos Sentado (custom)
+  // Treino B — Costas + Bíceps (buscados do histórico)
+  puxada_frontal:   null,
+  remada_baixa:     null,
+  remada_iso:       null,
+  rosca_direta:     'AF328E3D',   // Bicep Curl (Machine)
+  rosca_martelo:    '7E3BC8B6',   // Hammer Curl (Dumbbell)
+  // Treino C — Ombro + Inferior + Casa
+  desenvolvimento:  '059E835D',   // Shoulder Press (Machine Plates)
+  elevacao_lateral: '422B08F1',   // Lateral Raise (Dumbbell)
+  aberturas_inv:    'D8281C62',   // Rear Delt Reverse Fly (Machine)
+  leg_press:        '0EB695C9',   // Leg Press Horizontal (Machine) — ID global
+  extensora:        '75A4F6C4',   // Leg Extension (Machine)
+  flexora:          '11A123F3',   // Seated Leg Curl (Machine)
+  abdutora:         'F4B4C6EE',   // Hip Abduction (Machine)
+  panturrilha:      '062AB91A',   // Seated Calf Raise
+  ponte:            'CDA23948',   // Glute Bridge
+  inseto_morto:     'D8911FC4',   // Dead Bug
+  prancha:          'C6C9B8A0',   // Plank
+};
+
+function sets(reps, count=3, weight_kg=null, duration_seconds=null){
+  return Array.from({length:count}, () => ({
+    type: 'normal',
+    weight_kg: weight_kg,
+    reps: duration_seconds ? null : reps,
+    duration_seconds: duration_seconds || null
+  }));
+}
+
+function exW(templateId, reps, weight_kg, count=3){
+  return {
+    notes: '',
+    exercise_template_id: templateId,
+    sets: sets(reps, count, weight_kg)
+  };
+}
+
+function exT(templateId, duration_seconds, count=3){
+  return {
+    notes: '',
+    exercise_template_id: templateId,
+    sets: sets(null, count, null, duration_seconds)
+  };
+}
+
+function ex(templateId, reps, count=3){
+  return {
+    notes: '',
+    exercise_template_id: templateId,
+    sets: sets(reps, count)
+  };
+}
+
+function buildRotinas(){
+  const blocoRecuperacao = [
+    ex(IDS.lateral_band,     15),         // Lateral Band Walks — sem peso
+    ex(IDS.ponte,            15),          // Glute Bridge — sem peso
+    ex(IDS.inseto_morto,     15),          // Dead Bug — sem peso
+    exT(IDS.prancha,         60),          // Prancha — 60s
+    exW(IDS.isometria_adutor, 60, 14),    // Hip Adduction — 14kg (isometria com arco)
+  ];
+
+  const inferiorSeguro = [
+    exW(IDS.leg_press,   15, 86),   // Leg Press — 86kg
+    exW(IDS.extensora,   15, 23),   // Cadeira Extensora — 23kg
+    exW(IDS.flexora,     15, 14),   // Cadeira Flexora — 14kg (do histórico Fortalecimento)
+    exW(IDS.abdutora,    15, 36),   // Cadeira Abdutora — 36kg
+    exW(IDS.panturrilha, 15, 5),    // Panturrilha — 5kg
+  ];
+
+  const notesA = 'Treino A — Peito + Triceps + Inferior. Compostos primeiro, isolados depois. Descanso: 60-90s entre series.';
+  const notesB = 'Treino B — Costas + Biceps. Puxadas e remadas primeiro, roscas depois. Descanso: 60-90s entre series.';
+  const notesC = 'Treino C — Ombro + Inferior. Descanso: 60-90s entre series.';
+
+  const exercisesA = [
+    exT(IDS.esteira,              1200, 1),        // Esteira — 20min
+    exW(IDS.supino_inclinado, 12, 20),             // Supino Inclinado — 20kg
+    exW(IDS.crucifixo_voador, 12, 39),             // Crucifixo Voador — 39kg
+    exW(IDS.supino_sentado,   12, 23),             // Supino Sentado — 23kg
+    exW(IDS.triceps_polia,    12, 13.6),           // Tríceps Polia — 13.6kg
+    exW(IDS.maquina_fundos,   12, 36),             // Máquina Fundos — 36kg
+    ...inferiorSeguro,
+    ...blocoRecuperacao,
+  ];
+
+  const exercisesB = [
+    exT(IDS.esteira,             1200, 1),         // Esteira — 20min
+    exW(IDS.puxada_frontal,  12, 29),              // Puxada Frontal — 29kg
+    exW(IDS.remada_baixa,    12, 29),              // Remada Baixa — 29kg
+    exW(IDS.remada_iso,      12, 23),              // Remada Iso-Lateral — 23kg
+    exW(IDS.rosca_direta,    12, 18),              // Rosca Direta — 18kg
+    exW(IDS.rosca_martelo,   12, 14),              // Rosca Martelo — 14kg
+    ...blocoRecuperacao,
+  ];
+
+  const exercisesC = [
+    exT(IDS.esteira,              1200, 1),        // Esteira — 20min
+    exW(IDS.desenvolvimento,  12, 18),             // Desenvolvimento — 18kg
+    exW(IDS.elevacao_lateral, 12, 4),              // Elevação Lateral — 4kg
+    exW(IDS.aberturas_inv,    12, 32),             // Aberturas Invertidas — 32kg
+    ...inferiorSeguro,
+    ...blocoRecuperacao,
+  ];
+
+  return [
+    { title: 'Segunda - Peito + Triceps + Inferior',  notes: notesA, exercises: [...exercisesA] },
+    { title: 'Terca - Costas + Biceps',               notes: notesB, exercises: [...exercisesB] },
+    { title: 'Quarta - Ombro + Inferior',             notes: notesC, exercises: [...exercisesC] },
+    { title: 'Quinta - Peito + Triceps + Inferior',   notes: notesA, exercises: [...exercisesA] },
+    { title: 'Sexta - Costas + Biceps',               notes: notesB, exercises: [...exercisesB] },
+  ];
+}
+function setBadge(id, type, text){
+  const el = document.getElementById(id);
+  el.className = `badge b-${type}`;
+  el.textContent = text;
+}
+
+async function criarRotina(key, rotina, badgeId){
+  setBadge(badgeId, 'load', '⏳ Criando...');
+  log(`→ Criando: ${rotina.title}`);
+
+  // Log de todos os exercícios com IDs para diagnóstico
+  log('  Exercícios do treino:');
+  rotina.exercises.forEach((ex,i) => log(`    ${i+1}. ID: ${ex.exercise_template_id}`));
+
+  // Filtra exercícios com IDs inválidos
+  const antes = rotina.exercises.length;
+  rotina.exercises = rotina.exercises.filter(ex => {
+    const id = ex.exercise_template_id;
+    const valido = id && id !== 'PENDENTE' && id !== 'null' && id !== null && id !== undefined;
+    if(!valido) log(`  ⚠ Exercício removido (ID inválido): ${id}`);
+    return valido;
+  });
+  if(rotina.exercises.length < antes) log(`  ${antes - rotina.exercises.length} exercício(s) removido(s) por ID inválido`);
+
+  try{
+    const payload = { routine: rotina };
+    log('  Payload: '+JSON.stringify(payload).substring(0,300)+'...');
+    const r = await fetch('https://api.hevyapp.com/v1/routines', {
+      method: 'POST',
+      headers: {
+        'api-key': key,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const txt = await r.text();
+    log(`  Status: ${r.status}`);
+
+    if(r.ok){
+      const data = JSON.parse(txt);
+      const id = data.routine?.id || '—';
+      log(`  ✓ Criada com ID: ${id}`);
+      setBadge(badgeId, 'ok', '✓ Criada');
+      return true;
+    } else {
+      log(`  ✗ Erro: ${txt}`);
+      setBadge(badgeId, 'err', `✗ Erro ${r.status}`);
+      return false;
+    }
+  } catch(e){
+    log(`  ✗ Exceção: ${e.message}`);
+    setBadge(badgeId, 'err', '✗ Falhou');
+    return false;
+  }
+}
+
+async function buscarIdsPuxadaRemada(key){
+  log('→ Buscando IDs de puxada e remadas no histórico de treinos...');
+  try{
+    // Busca nos treinos registrados — mais confiável que o catálogo
+    for(let page = 1; page <= 5; page++){
+      const r = await fetch(`https://api.hevyapp.com/v1/workouts?page=${page}&pageSize=5`,{headers:{'api-key':key}});
+      if(!r.ok) break;
+      const data = await r.json();
+      const workouts = data.workouts||[];
+      if(!workouts.length) break;
+
+      for(const w of workouts){
+        for(const ex of(w.exercises||[])){
+          const n = (ex.title||'').toLowerCase();
+          const id = ex.exercise_template_id;
+          if(!id) continue;
+
+          if(!IDS.puxada_frontal && (n.includes('puxada')||(n.includes('lat')&&n.includes('pull')))){
+            IDS.puxada_frontal = id;
+            log(`  ✓ Puxada frontal: ${ex.title} → ${id}`);
+          }
+          if(!IDS.remada_baixa && n.includes('remada') && (n.includes('baixa')||n.includes('sentad')||n.includes('polia')||n.includes('pegada'))){
+            IDS.remada_baixa = id;
+            log(`  ✓ Remada baixa: ${ex.title} → ${id}`);
+          }
+          if(!IDS.remada_iso && n.includes('remada') && (n.includes('iso')||n.includes('cavalinho')||n.includes('inclinad')||n.includes('lateral'))){
+            IDS.remada_iso = id;
+            log(`  ✓ Remada iso: ${ex.title} → ${id}`);
+          }
+        }
+      }
+      if(IDS.puxada_frontal && IDS.remada_baixa && IDS.remada_iso) break;
+    }
+
+    // Log do que encontrou ou não
+    if(!IDS.puxada_frontal) log('  ⚠ Puxada frontal não encontrada no histórico');
+    if(!IDS.remada_baixa) log('  ⚠ Remada baixa não encontrada no histórico');
+    if(!IDS.remada_iso) log('  ⚠ Remada iso não encontrada no histórico');
+  } catch(e){
+    log(`  Aviso: erro ao buscar histórico — ${e.message}`);
+  }
+}
+
+function log(msg){
+  const el=document.getElementById('log');
+  if(!el) return;
+  el.style.display='block';
+  el.innerHTML+=msg+'\n';
+  el.scrollTop=el.scrollHeight;
+}
+
+function setBadge(id,type,text){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const colors={wait:'#555',load:'#3b82f6',ok:'#22c55e',err:'#ef4444'};
+  el.style.color=colors[type]||'#fff';
+  el.textContent=text;
+}
+
+async function getFolderId(key){
+  try{
+    // Tenta buscar pastas existentes
+    const r = await fetch('https://api.hevyapp.com/v1/routine_folders?page=1&pageSize=10',{headers:{'api-key':key}});
+    if(r.ok){
+      const data = await r.json();
+      const folders = data.routine_folders||[];
+      if(folders.length){
+        log('  Pastas encontradas: '+folders.map(f=>f.title+' (id:'+f.id+')').join(', '));
+        return folders[0].id;
+      }
+    }
+    // Cria uma pasta nova
+    log('  Criando pasta "Plano ABC"...');
+    const r2 = await fetch('https://api.hevyapp.com/v1/routine_folders',{
+      method:'POST',
+      headers:{'api-key':key,'Content-Type':'application/json'},
+      body: JSON.stringify({routine_folder:{title:'Plano ABC'}})
+    });
+    const txt = await r2.text();
+    log('  Criar pasta status: '+r2.status+' — '+txt);
+    if(r2.ok){
+      const d = JSON.parse(txt);
+      const fid = d.routine_folder?.id || d.id;
+      log('  Pasta criada com ID: '+fid);
+      return fid;
+    }
+    // Se não conseguiu criar pasta, tenta sem folder_id removendo o campo
+    log('  Não foi possível criar pasta — tentando sem folder_id.');
+    return 'SKIP';
+  }catch(e){log('  Erro pastas: '+e.message);return 'SKIP';}
+}
+
+async function criarTodas(){
+  const key = document.getElementById('apiKey').value.trim().replace(/[^a-zA-Z0-9-]/g,'');
+  if(!key){alert('Insira a chave de API.');return;}
+
+  document.getElementById('btnCriar').disabled = true;
+  document.getElementById('log').innerHTML = '';
+  log('=== Iniciando criação das rotinas ===');
+
+  // Busca IDs das puxadas/remadas no histórico
+  await buscarIdsPuxadaRemada(key);
+  const folderId = await getFolderId(key);
+  log('  Folder ID: '+folderId);
+
+  // Constrói as 5 rotinas
+  const rotinas = buildRotinas();
+
+  // Aplica folder_id e renderiza cards
+  const dias = ['seg','ter','qua','qui','sex'];
+  const cardsHtml = rotinas.map((r,i) => `
+    <div class="routine-card">
+      <div class="status-row">
+        <h3>${r.title}</h3>
+        <span class="badge b-wait" id="status${dias[i]}">Aguardando</span>
+      </div>
+    </div>`).join('');
+  document.getElementById('statusCards').innerHTML = cardsHtml;
+
+  for(const [i, rotina] of rotinas.entries()){
+    if(folderId && folderId !== 'SKIP') rotina.folder_id = folderId;
+    await criarRotina(key, rotina, 'status'+dias[i]);
+    await new Promise(r=>setTimeout(r,600));
+  }
+
+  log('=== Concluído! Abra o Hevy para ver as rotinas. ===');
+  document.getElementById('btnCriar').disabled = false;
+}
+</script>
+</body>
+</html>
